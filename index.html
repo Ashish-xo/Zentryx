@@ -1459,18 +1459,17 @@
             // Seamless Global Intelligence without API Key (Pollinations Free Tier)
             if (!apiKey) {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                const timeoutId = setTimeout(() => controller.abort(), 20000);
                 try {
-                    const pollinationsMessages = currentContents.map(c => ({
-                        role: c.role === "model" ? "assistant" : c.role,
-                        content: c.parts[0].text
-                    }));
-                    const res = await fetch('https://text.pollinations.ai/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        signal: controller.signal,
-                        body: JSON.stringify({ messages: pollinationsMessages })
+                    const systemPrompt = "You are Zentryx, a futuristic and highly adaptive AI assistant. Answer confidently, concisely, and cleanly (no markdown).";
+                    const encodedPrompt = encodeURIComponent(prompt);
+                    const encodedSystem = encodeURIComponent(systemPrompt);
+                    
+                    const res = await fetch(`https://text.pollinations.ai/${encodedPrompt}?system=${encodedSystem}`, {
+                        method: 'GET',
+                        signal: controller.signal
                     });
+                    
                     clearTimeout(timeoutId);
                     if (res.ok) {
                         let text = await res.text();
@@ -1481,7 +1480,7 @@
                     }
                 } catch(e) {
                     clearTimeout(timeoutId);
-                    console.error("Free inference overloaded:", e);
+                    console.error("Free inference fallback failed:", e);
                 }
                 return null; // Triggers offline database fallback
             }
