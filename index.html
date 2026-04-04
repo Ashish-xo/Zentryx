@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Zentryx | Digital Frontier</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Google Fonts: Space Grotesk for tech-forward feel -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Leaflet Map JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Leaflet Heatmap Plugin -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "frontier-deep": "#040816",
+                        "frontier-navy": "#11192e",
+                        "frontier-indigo": "#a3a6ff",
+                        "frontier-lime": "#ceee93",
+                        "frontier-text": "#a5aac2",
+                        "primary": "#a3a6ff",
+                        "on-primary": "#070d1f",
+                        "secondary": "#ceee93",
+                        "background": "#070d1f",
+                        "surface": "#11192e",
+                        "surface-variant": "#1d2642"
+                    },
+                    fontFamily: {
+                        "headline": ["'Space Grotesk'", "sans-serif"],
+                        "body": ["'Space Grotesk'", "sans-serif"],
+                        "label": ["'Space Grotesk'", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #070d1f;
+            color: #a5aac2;
+            overflow-x: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .glass-frontier {
+            backdrop-filter: blur(16px);
+            background: rgba(17, 25, 46, 0.7);
+            border: 1px solid rgba(163, 166, 255, 0.1);
+        }
+
+        .neon-glow-indigo {
+            box-shadow: 0 0 15px rgba(163, 166, 255, 0.3);
+        }
+
+        .neon-glow-lime {
+            box-shadow: 0 0 15px rgba(206, 238, 147, 0.3);
+        }
+
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(163, 166, 255, 0.05) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        .layer-btn.active {
+            background: rgba(206, 238, 147, 0.2);
+            border-color: #ceee93;
+            box-shadow: 0 0 10px rgba(206, 238, 147, 0.3);
+        }
+
+        .story-circle {
+            flex-shrink: 0;
+            width: 64px;
+            height: 64px;
+            padding: 2px;
+            border: 2px solid #a3a6ff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .story-circle:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .reputation-badge {
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            background: #ceee93;
+            color: #070d1f;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        /* Map Engine (Restored to Original Colors) */
+        .leaflet-container {
+            background: #f8f9fa !important;
+        }
+
+        .leaflet-tile-pane {
+            filter: none;
+        }
+
+        .leaflet-marker-icon {
+            filter: none;
+        }
+
+        /* Floating Signal Bubbles */
+        @keyframes signalRise {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        .signal-ping {
+            position: absolute;
+            border: 1px solid #ceee93;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1001;
+            animation: signalRise 3s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+        }
+
+        /* Dashboard Page Transitions */
+        .dashboard-view {
+            display: none;
+        }
+
+        .dashboard-view.view-active {
+            display: block;
+            animation: dashFade 0.6s cubic-bezier(0.2, 0, 0.2, 1);
+        }
+
+        @keyframes dashFade {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.99);
+                filter: blur(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(163, 166, 255, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #ceee93;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body class="bg-frontier-deep text-frontier-text selection:bg-frontier-indigo/30">
+    <!-- Overlay Scanline for tech aesthetic -->
+    <div class="fixed inset-0 scanline z-[100] opacity-20"></div>
+    <!-- TopNavBar (Shared Component) -->
+    <nav class="fixed top-0 w-full z-50 bg-[#070d1f]/70 backdrop-blur-xl shadow-[0_0_15px_rgba(163,166,255,0.1)] h-16">
+        <div class="flex justify-between items-center px-8 h-full w-full">
+            <div class="text-xl font-bold tracking-widest text-[#a3a6ff]">ZENTRYX</div>
+            <div class="hidden md:flex items-center space-x-8 font-['Space_Grotesk'] tracking-tight text-sm uppercase">
+                <a class="text-[#ceee93] border-b-2 border-[#ceee93] pb-1" href="#">Explore</a>
+                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors" href="#">Partners</a>
+                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors" href="#">Routes</a>
+                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors" href="#">Blog</a>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="hidden lg:flex items-center bg-[#11192e] px-4 py-1.5 rounded border border-[#a3a6ff]/20">
+                    <span class="material-symbols-outlined text-sm text-[#a3a6ff] mr-2">search</span>
+                    <input
+                        class="bg-transparent border-none focus:ring-0 text-xs text-[#a3a6ff] placeholder-[#a3a6ff]/40 uppercase tracking-widest"
+                        placeholder="SEARCH DESTINATIONS" type="text" />
+                </div>
+                <div class="flex items-center gap-4 text-[#a3a6ff]">
+                    <span
+                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all">notifications</span>
+                    <span
+                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all">settings</span>
+                </div>
+                <div class="w-8 h-8 rounded-full overflow-hidden border border-[#a3a6ff]/50 ring-2 ring-[#a3a6ff]/10">
+                    <img alt="User profile commander avatar"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ALzx01r-awRGOh7Dsk-AcsxbAfyhkqvV9r6NX4ha6YT6myF_FNHcqcqtsOTTDnEExCuYsI6vU6JzT8MqjQJrzsnUHuQY_Ysk42SvP0ZK4AkFSYXoVDMLVGa2gm1slf0mv6R3SVO4JoOlfj8tk73XmTZ4oOJjMZu9a4oTH4LQwkjh4peFxcfOtRAPPZhxfGCSEA2RUQqGvpP91S0b1M0HjSnGQRETZx2ez3GYq8RaEyYMc4ZyTGT9IKHB_8d2FrvioVC01p5PVxxx" />
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center pt-20 overflow-hidden">
+        <div
+            class="absolute inset-0 z-0 flex gap-1 p-2 opacity-20 grayscale hover:grayscale-0 transition-all duration-1000">
+            <div class="flex-1 h-full overflow-hidden border-x border-frontier-indigo/10">
+                <img class="w-full h-full object-cover"
+                    data-alt="Dramatic aerial shot of winding coastal roads during sunset"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBI4485OA74LlKostg2DhTj6ItkmVgYOBxq_iK7HsT57D0ov2RbYU4PNtHjWWZF4wstGy2SZz1uJojwJ7166nAaXr1SKntgCgF1VQ_tmgQYdyhrZogvTDxzkJ6tVNXMfoI4poRrbsf5QnACVslhmN05ZBOLAsTnu7tItYgtUI5zXYPFUPtUbH85bHltBHCc6gPClq8CBOTDwPbLstRkjiArIcpjRytw9AJfjbzexXra3g17nwMXZCZ56loUoQa5vm8CdOyT2CmQn7Yu" />
+            </div>
+            <div class="flex-1 h-full overflow-hidden border-x border-frontier-indigo/10">
+                <img class="w-full h-full object-cover" data-alt="Breathtaking mountain peaks"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTVlt0ZUvVVMU9LP6dZaZw-UuFElV9jtXV67Od3B39xvgC5TufMth0uBCUsH6s0nGzYROFt100PjdHjoXCZfIC27P4HclqVT-_HLJMlp3vvUDoB7IO1lgwdK9y8_av9891vXSh0qovi4WjjMgcvuV_A9ntw1LoeFeGPNZI4Gpsmwk88h83yzgptVhiws2oEcihPaX623ZLnbXswwRYxzQE4pj1Wfh4LrWah9hA3wIbG_WIgnkoK2If-XwylR2qsnPWQbODyGpC0upv" />
+            </div>
+            <div class="flex-1 h-full overflow-hidden border-x border-frontier-indigo/10">
+                <img class="w-full h-full object-cover" data-alt="Lush tropical rainforest"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT1gB4L_1yEYrDyjs4qU49TfKIOlBK9n2WXXYqPP3_7GO9AlHic5diQL8X5-y8eMLou6WIKEdUy7Qs_FWAuogtvhyRgcxrwHlPPw3mYEkXS2dCmUuf84dCMFet12W2xZZ3vLl3OO1gSV8imQJnHC45BhrMzHt_fYT12cz8OkzQA3okGqG1XLmICDz3OPCDqPzfXCORiUGLnUJeep6kc60Sz1G6Sp6j5deeKbP-AWDMuuWabO9_QFG-IJmowwy6td2vbAGx3NwfQNDm" />
+            </div>
+        </div>
+        <!-- Tech HUD Elements -->
+        <div class="absolute inset-0 z-5 pointer-events-none border-[1px] border-frontier-indigo/10 m-8 rounded-sm">
+            <div class="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-frontier-lime"></div>
+            <div class="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-frontier-lime"></div>
+            <div class="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-frontier-lime"></div>
+            <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-frontier-lime"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto px-6 w-full text-center">
+            <div
+                class="inline-block mb-4 px-3 py-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-frontier-indigo text-xs font-bold tracking-[0.4em] uppercase rounded-full">
+                Find Your Next Adventure
+            </div>
+            <h1
+                class="font-headline font-black text-6xl md:text-8xl text-white leading-none mb-6 tracking-tight uppercase">
+                Travel with <span class="text-frontier-lime neon-glow-lime">Ease</span>
+            </h1>
+            <p
+                class="font-body text-lg md:text-xl text-frontier-text max-w-2xl mx-auto mb-12 tracking-wide uppercase font-light">
+                Experience the world with a smart travel companion that adapts to your unique preferences and keeps you
+                connected.
+            </p>
+            <div class="flex flex-col md:flex-row gap-6 justify-center">
+                <button onclick="openBudgetModal()"
+                    class="bg-frontier-indigo text-frontier-deep px-12 py-4 font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 neon-glow-indigo">
+                    Start Planning
+                </button>
+                <button
+                    onclick="openModal('Live Updates', 'Connecting to current travel conditions in your area. Please wait...')"
+                    class="border border-frontier-indigo text-frontier-indigo px-12 py-4 font-bold uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all duration-300">
+                    Live Travel Updates
+                </button>
+            </div>
+        </div>
+    </section>
+    <!-- The Travel Cluster -->
+    <section class="py-24 bg-frontier-navy/50 border-y border-frontier-indigo/10">
+        <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+            <div class="order-2 md:order-1 relative h-[500px] flex items-center justify-center">
+                <div class="relative w-full h-full">
+                    <!-- Tech Ring Background -->
+                    <div
+                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-frontier-indigo/20 rounded-full animate-spin [animation-duration:15s]">
+                    </div>
+                    <div
+                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-frontier-lime/20 rounded-full animate-spin [animation-duration:10s] [animation-direction:reverse]">
+                    </div>
+                    <!-- Digital Nodes -->
+                    <div
+                        class="absolute top-10 left-10 w-24 h-24 glass-frontier flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30">
+                        <span class="material-symbols-outlined text-4xl text-frontier-indigo"
+                            data-icon="explore">explore</span>
+                    </div>
+                    <div
+                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 glass-frontier flex flex-col items-center justify-center shadow-2xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border-2 border-frontier-lime">
+                        <span class="material-symbols-outlined text-6xl text-frontier-lime mb-2" data-icon="waves"
+                            style="font-variation-settings: 'FILL' 1;">waves</span>
+                        <span
+                            class="text-[10px] font-bold tracking-[0.2em] uppercase text-frontier-lime">SYSTEM_SYNC</span>
+                    </div>
+                    <div
+                        class="absolute bottom-10 right-20 w-32 h-32 glass-frontier flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30">
+                        <span class="material-symbols-outlined text-5xl text-frontier-indigo" data-icon="map">map</span>
+                    </div>
+                    <div
+                        class="absolute top-1/4 right-5 w-20 h-20 glass-frontier flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30">
+                        <span class="material-symbols-outlined text-3xl text-frontier-indigo"
+                            data-icon="auto_stories">auto_stories</span>
+                    </div>
+                </div>
+            </div>
+            <div class="order-1 md:order-2">
+                <span
+                    class="text-xs font-bold tracking-[0.5em] uppercase text-frontier-lime mb-6 block border-l-4 border-frontier-lime pl-4">Real
+                    Insights</span>
+                <h2 class="font-headline text-5xl md:text-6xl font-black text-white mb-8 uppercase tracking-tighter">
+                    Guided by the <br /><span class="text-frontier-indigo">Community</span></h2>
+                <p class="font-body text-lg text-frontier-text leading-relaxed mb-10 tracking-wide">
+                    Join a global community of travelers. We turn real-time experiences into a living map of
+                    possibilities. Tap, scroll, and find the perfect journey.
+                </p>
+                <div class="space-y-4">
+                    <div
+                        class="flex items-center gap-6 p-5 glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo/40 transition-all group">
+                        <div
+                            class="w-12 h-12 bg-frontier-indigo/10 flex items-center justify-center text-frontier-indigo border border-frontier-indigo/30 group-hover:bg-frontier-indigo group-hover:text-frontier-deep transition-all">
+                            <span class="material-symbols-outlined" data-icon="groups">groups</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white uppercase tracking-widest text-sm">Community Insights</h4>
+                            <p class="text-xs text-frontier-text uppercase mt-1">Real-time recommendations from
+                                travelers just like you.</p>
+                        </div>
+                    </div>
+                    <div
+                        class="flex items-center gap-6 p-5 glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo/40 transition-all group">
+                        <div
+                            class="w-12 h-12 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 group-hover:bg-frontier-lime group-hover:text-frontier-deep transition-all">
+                            <span class="material-symbols-outlined" data-icon="fluid_med">fluid_med</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white uppercase tracking-widest text-sm">Smart Routing</h4>
+                            <p class="text-xs text-frontier-text uppercase mt-1">Routes that adapt beautifully to live
+                                weather and traffic conditions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Features Bento Grid -->
+    <section class="py-24 px-6 bg-frontier-deep relative" id="features-grid-section">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+                <div class="max-w-2xl">
+                    <h2 class="font-headline text-5xl font-black text-white mb-4 uppercase tracking-tighter">Real-Time
+                        Updates</h2>
+                    <p class="font-body text-frontier-text uppercase tracking-widest text-sm">Live information perfectly
+                        synchronized with your itinerary.</p>
+                </div>
+                <div class="flex gap-4">
+                    <button
+                        onclick="openModal('Auto Sync On', 'We are automatically handling your navigation to save you time.')"
+                        class="w-12 h-12 border border-frontier-indigo/30 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                    <button
+                        onclick="openModal('Auto Sync On', 'We are automatically handling your navigation to save you time.')"
+                        class="w-12 h-12 border border-frontier-indigo/30 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all">
+                        <span class="material-symbols-outlined">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Weather Feature -->
+                <div class="md:col-span-1 glass-frontier p-8 flex flex-col justify-between group hover:border-frontier-indigo transition-all border border-frontier-indigo/10 cursor-pointer"
+                    id="live-weather-card" onclick="showWeatherForecast()">
+                    <div class="flex justify-between items-start">
+                        <span class="material-symbols-outlined text-4xl text-frontier-indigo" id="weather-icon"
+                            data-icon="cloudy_snowing">cloudy_snowing</span>
+                        <div class="text-right">
+                            <div class="text-4xl font-headline font-black text-white" id="weather-temp">--°C</div>
+                            <div class="text-[10px] uppercase tracking-widest font-bold text-frontier-indigo">
+                                LIVE_UPDATE</div>
+                        </div>
+                    </div>
+                    <div class="mt-20">
+                        <h3 class="text-2xl font-headline font-bold text-white uppercase mb-2">Live Weather Tracking
+                        </h3>
+                        <p class="text-frontier-text text-sm uppercase tracking-wider" id="weather-desc">Accurate,
+                            up-to-the-minute weather forecasts for every stop on your trip.</p>
+                    </div>
+                </div>
+                <!-- Hotel/Stay Feature -->
+                <div class="md:col-span-2 glass-frontier p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-indigo/30 transition-all overflow-hidden relative group"
+                    id="stays-card">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 bg-frontier-indigo/10 flex items-center justify-center text-frontier-indigo border border-frontier-indigo/30 neon-glow-indigo flex-shrink-0">
+                            <span class="material-symbols-outlined text-2xl"
+                                style="font-variation-settings:'FILL' 1;">hotel</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-headline font-bold text-white uppercase">Curated Stays</h3>
+                            <p class="text-frontier-text text-[11px] uppercase tracking-wider">Expert-vetted
+                                accommodations — Intelligence-driven results</p>
+                        </div>
+                    </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <div class="relative flex-1 min-w-[150px]">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-frontier-indigo/50 text-sm">search</span>
+                                <input id="stay-search-input" type="text" placeholder="Location (e.g. Goa, Mumbai...)" class="w-full bg-frontier-deep border border-frontier-indigo/30 pl-9 pr-3 py-2 text-[11px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-indigo transition-colors" />
+                            </div>
+                            <button onclick="searchStays()" class="bg-frontier-indigo text-white px-4 py-2 text-[10px] uppercase font-black hover:scale-105 active:scale-95 transition-all">Search</button>
+                            <button id="stay-sort-btn" onclick="toggleHotelSort()" class="border border-frontier-indigo/30 text-frontier-indigo px-3 py-2 text-[9px] uppercase font-bold hover:bg-frontier-indigo/10 flex items-center gap-1 transition-all">
+                                <span class="material-symbols-outlined text-sm">swap_vert</span> Price: Low
+                            </button>
+                        </div>
+
+                    <!-- Scrollable Results Container -->
+                    <div id="stay-results-grid"
+                        class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                        <!-- Initial State -->
+                        <div
+                            class="col-span-2 flex flex-col items-center justify-center py-12 text-frontier-indigo/40 space-y-3">
+                            <span class="material-symbols-outlined text-4xl opacity-20">travel_explore</span>
+                            <span class="text-[9px] uppercase tracking-[0.3em]">Querying global hospitality
+                                API...</span>
+                        </div>
+                    </div>
+
+                    <!-- Stats footer -->
+                    <div class="flex justify-between items-center pt-2 border-t border-frontier-indigo/10">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-frontier-lime animate-pulse"></span>
+                            <span class="text-[9px] text-frontier-text uppercase tracking-widest">Real-time occupancy
+                                tracking</span>
+                        </div>
+                        <div class="text-[10px] text-frontier-indigo font-bold uppercase tracking-widest cursor-pointer hover:underline"
+                            onclick="switchDashView('map')">View Map Heatmap</div>
+                    </div>
+                </div>
+                <!-- Traffic/Route Planner Feature -->
+                <div class="md:col-span-2 glass-frontier p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-lime transition-all"
+                    id="route-planner-card">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 neon-glow-lime flex-shrink-0">
+                            <span class="material-symbols-outlined text-2xl"
+                                style="font-variation-settings:'FILL' 1;">alt_route</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-headline font-bold text-white uppercase">Route Planner</h3>
+                            <p class="text-frontier-text text-[11px] uppercase tracking-wider">Shortest path — powered
+                                by OpenStreetMap routing</p>
+                        </div>
+                        <button onclick="useMyLocationForRoute()"
+                            class="ml-auto flex-shrink-0 flex items-center gap-1 text-[10px] uppercase tracking-widest text-frontier-lime border border-frontier-lime/30 hover:bg-frontier-lime/10 px-3 py-2 transition-all">
+                            <span class="material-symbols-outlined text-sm">my_location</span> Use My Location
+                        </button>
+                    </div>
+                    <!-- Inputs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="text-[10px] uppercase tracking-widest text-frontier-indigo/70 mb-1 block">From</label>
+                            <input id="route-from" type="text" placeholder="Origin (city, address...)"
+                                class="w-full bg-frontier-deep border border-frontier-indigo/30 px-3 py-2 text-[12px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-lime transition-colors" />
+                        </div>
+                        <div>
+                            <label
+                                class="text-[10px] uppercase tracking-widest text-frontier-indigo/70 mb-1 block">To</label>
+                            <input id="route-to" type="text" placeholder="Destination (city, address...)"
+                                class="w-full bg-frontier-deep border border-frontier-indigo/30 px-3 py-2 text-[12px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-lime transition-colors" />
+                        </div>
+                    </div>
+                    <!-- Mode selector -->
+                    <div class="flex gap-2">
+                        <button onclick="setRouteMode('driving')" id="mode-driving"
+                            class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-lime text-frontier-lime bg-frontier-lime/10 transition-all">
+                            <span class="material-symbols-outlined text-sm">directions_car</span> Drive
+                        </button>
+                        <button onclick="setRouteMode('cycling')" id="mode-cycling"
+                            class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-indigo/30 text-frontier-indigo hover:border-frontier-lime hover:text-frontier-lime transition-all">
+                            <span class="material-symbols-outlined text-sm">directions_bike</span> Cycle
+                        </button>
+                        <button onclick="setRouteMode('walking')" id="mode-walking"
+                            class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-indigo/30 text-frontier-indigo hover:border-frontier-lime hover:text-frontier-lime transition-all">
+                            <span class="material-symbols-outlined text-sm">directions_walk</span> Walk
+                        </button>
+                        <button onclick="calculateRoute()"
+                            class="ml-auto flex items-center gap-1 px-4 py-1.5 text-[10px] uppercase tracking-widest bg-frontier-lime text-frontier-deep font-black hover:brightness-110 transition-all">
+                            <span class="material-symbols-outlined text-sm">route</span> Get Route
+                        </button>
+                    </div>
+                    <!-- Results -->
+                    <div id="route-results" class="hidden">
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div class="glass-frontier p-3 border border-frontier-lime/20 text-center">
+                                <div class="text-[9px] uppercase tracking-widest text-frontier-indigo/60 mb-1">Distance
+                                </div>
+                                <div class="text-frontier-lime font-black text-lg" id="route-distance">--</div>
+                            </div>
+                            <div class="glass-frontier p-3 border border-frontier-lime/20 text-center">
+                                <div class="text-[9px] uppercase tracking-widest text-frontier-indigo/60 mb-1">Est. Time
+                                </div>
+                                <div class="text-frontier-lime font-black text-lg" id="route-time">--</div>
+                            </div>
+                            <div class="glass-frontier p-3 border border-frontier-lime/20 text-center group cursor-help"
+                                title="Total number of turn-by-turn maneuvers">
+                                <div class="text-[9px] uppercase tracking-widest text-frontier-indigo/60 mb-1">Maneuvers
+                                </div>
+                                <div class="text-frontier-lime font-black text-lg" id="route-steps">--</div>
+                            </div>
+                        </div>
+                        <div id="route-steps-list" class="max-h-36 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                        </div>
+                        <button onclick="scrollToMap()"
+                            class="mt-3 text-[10px] uppercase tracking-widest text-frontier-lime border border-frontier-lime/30 hover:bg-frontier-lime/10 px-3 py-2 w-full transition-all flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-sm">map</span> View on Map
+                        </button>
+                    </div>
+                    <div id="route-loading"
+                        class="hidden text-[11px] text-frontier-lime/60 uppercase tracking-widest animate-pulse">
+                        Calculating shortest path...</div>
+                    <div id="route-error" class="hidden text-[11px] text-red-400 uppercase tracking-widest"></div>
+                </div>
+
+                <!-- Maps Feature -->
+                <div
+                    class="md:col-span-1 bg-frontier-indigo p-8 flex flex-col justify-between text-frontier-deep group hover:brightness-110 transition-all">
+                    <div class="flex justify-between items-start">
+                        <span class="material-symbols-outlined text-4xl" data-icon="location_on"
+                            style="font-variation-settings: 'FILL' 1;">location_on</span>
+                        <span class="text-[10px] uppercase tracking-widest font-black">Navigation</span>
+                    </div>
+                    <div class="mt-20">
+                        <h3 class="text-2xl font-headline font-black uppercase mb-2">Hidden Gems</h3>
+                        <p class="text-frontier-deep/80 text-sm font-bold uppercase tracking-wide">Discover
+                            off-the-beaten-path locations recommended by our trusted community.</p>
+                        <button onclick="scrollToMap()"
+                            class="mt-6 flex items-center gap-2 group-hover:translate-x-2 transition-transform">
+                            <span class="font-black text-xs uppercase tracking-widest">View Map</span>
+                            <span class="material-symbols-outlined text-sm">trending_flat</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Dashboard Section (Tabbed: Map, Feed, Chat) -->
+    <section class="py-12 bg-frontier-deep border-y border-frontier-indigo/10 relative overflow-hidden"
+        id="dashboard-section">
+        <div class="absolute inset-0 opacity-[0.02] pointer-events-none"
+            style="background-image: radial-gradient(#ceee93 1px, transparent 1px); background-size: 30px 30px;"></div>
+
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <!-- Dashboard Tabs -->
+            <div class="flex items-center justify-center mb-12 border-b border-frontier-indigo/10">
+                <nav class="flex gap-12">
+                    <button onclick="switchDashView('map')" id="tab-map"
+                        class="pb-4 text-sm font-black uppercase tracking-[0.3em] text-frontier-indigo transition-all border-b-2 border-transparent tab-active flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">map</span> Map
+                    </button>
+                    <button onclick="switchDashView('feed')" id="tab-feed"
+                        class="pb-4 text-sm font-black uppercase tracking-[0.3em] text-frontier-text transition-all border-b-2 border-transparent flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">broadcast_on_personal</span> Feed
+                    </button>
+                    <button onclick="switchDashView('chat')" id="tab-chat"
+                        class="pb-4 text-sm font-black uppercase tracking-[0.3em] text-frontier-text transition-all border-b-2 border-transparent flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">forum</span> Co-Pilot
+                    </button>
+                </nav>
+            </div>
+
+            <!-- 1. MAP VIEW -->
+            <div id="view-map" class="dashboard-view view-active">
+                <div
+                    class="relative w-full h-[700px] shadow-[0_0_80px_rgba(4,8,22,0.8)] border border-frontier-indigo/10 rounded-sm group">
+                    <div id="map" class="w-full h-full"></div>
+
+                    <!-- Floating Map Signals Overlay (JS will spawn bubbles here) -->
+                    <div id="map-signal-field" class="absolute inset-0 pointer-events-none overflow-hidden z-[1001]">
+                    </div>
+
+                    <!-- Map Logic Overlays -->
+                    <div class="absolute top-6 left-6 z-[1000] flex flex-col gap-2">
+                        <button onclick="toggleMapLayer('users')"
+                            class="layer-btn active glass-frontier p-2.5 text-frontier-indigo border border-frontier-indigo/30 rounded-lg group"
+                            id="btn-users">
+                            <span class="material-symbols-outlined text-lg">group</span>
+                        </button>
+                        <button onclick="toggleMapLayer('hotspots')"
+                            class="layer-btn glass-frontier p-2.5 text-frontier-lime border border-frontier-lime/30 rounded-lg group"
+                            id="btn-hotspots">
+                            <span class="material-symbols-outlined text-lg">local_fire_department</span>
+                        </button>
+                        <button onclick="toggleMapLayer('alerts')"
+                            class="layer-btn glass-frontier p-2.5 text-red-400 border border-red-400/30 rounded-lg group"
+                            id="btn-alerts">
+                            <span class="material-symbols-outlined text-lg">warning</span>
+                        </button>
+                        <button onclick="toggleHeatmap()"
+                            class="layer-btn glass-frontier p-2.5 text-orange-400 border border-orange-400/30 rounded-lg group"
+                            id="btn-heatmap">
+                            <span class="material-symbols-outlined text-lg">heat_pump</span>
+                            <div
+                                class="absolute left-14 bg-orange-400 text-frontier-deep px-2 py-1 text-[8px] font-bold uppercase rounded hidden group-hover:block whitespace-nowrap">
+                                Activity Heatmap</div>
+                        </button>
+                    </div>
+
+                    <!-- Visibility switch -->
+                    <div
+                        class="absolute top-6 right-6 z-[1000] glass-frontier p-3 flex items-center gap-4 rounded-lg border border-frontier-indigo/20">
+                        <span id="visibility-status"
+                            class="text-[8px] font-black uppercase tracking-widest text-frontier-text">Incognito</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" onchange="toggleVisibility()" id="meetup-toggle"
+                                class="sr-only peer">
+                            <div
+                                class="w-8 h-4 bg-frontier-indigo/10 rounded-full peer peer-checked:bg-frontier-lime/20 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-frontier-indigo after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-frontier-lime">
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Weather mini-HUD -->
+                    <div
+                        class="absolute bottom-6 left-6 z-[1000] glass-frontier p-4 border border-frontier-indigo/10 flex items-center gap-6">
+                        <div class="flex items-center gap-2">
+                            <span id="weather-icon" class="material-symbols-outlined text-frontier-lime">cloud</span>
+                            <span id="weather-temp" class="text-xl font-black text-white">--°</span>
+                        </div>
+                        <div class="h-6 w-px bg-white/10"></div>
+                        <span id="map-status"
+                            class="text-[9px] font-bold uppercase tracking-widest text-frontier-indigo">Sync
+                            active</span>
+                    </div>
+
+                    <!-- Snap action -->
+                    <button onclick="snapToMe()"
+                        class="absolute bottom-6 right-6 z-[1000] glass-frontier p-3 text-frontier-lime border border-frontier-lime/30 rounded-full hover:bg-frontier-lime/10 transition-all">
+                        <span class="material-symbols-outlined">location_searching</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. FEED VIEW -->
+            <div id="view-feed" class="dashboard-view">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <!-- Social Strip (Stories) -->
+                    <div
+                        class="lg:col-span-4 bg-frontier-navy/40 p-6 flex items-center gap-8 border border-frontier-indigo/5">
+                        <div id="stories-strip" class="flex gap-6 overflow-x-auto no-scrollbar"></div>
+                        <button onclick="postStory()"
+                            class="flex-shrink-0 w-12 h-12 border-2 border-dashed border-frontier-lime/30 rounded-full flex items-center justify-center text-frontier-lime hover:border-frontier-lime transition-all">
+                            <span class="material-symbols-outlined">add</span>
+                        </button>
+                    </div>
+                    <!-- Bulletin Board -->
+                    <div id="threads-container"
+                        class="lg:col-span-3 space-y-6 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar"></div>
+                    <!-- Contributors -->
+                    <div class="lg:col-span-1 glass-frontier p-8 border border-frontier-indigo/10 h-fit">
+                        <h4 class="text-[10px] font-black uppercase text-frontier-lime mb-8 tracking-[0.3em]">
+                            Leaderboard</h4>
+                        <div id="reputation-list" class="space-y-6"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. CHAT VIEW (Co-Pilot Enhanced) -->
+            <div id="view-chat" class="dashboard-view max-w-4xl mx-auto">
+                <div
+                    class="glass-frontier p-12 border border-frontier-indigo/10 bg-frontier-navy/20 relative overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-64 h-64 bg-frontier-indigo/5 rounded-full blur-3xl"></div>
+
+                    <div class="relative z-10">
+                        <h3 class="text-4xl font-headline font-black text-white italic uppercase mb-2">AI <span
+                                class="text-frontier-indigo">Frequency</span></h3>
+                        <p class="text-xs uppercase tracking-widest text-frontier-text mb-12">Universal intelligence
+                            tuned to your current coordinates</p>
+
+                        <div id="co-pilot-log" class="h-[400px] overflow-y-auto mb-8 space-y-4 pr-4 custom-scrollbar">
+                            <div class="text-frontier-lime/80"><span class="text-frontier-lime font-black mr-2">></span>
+                                COMMANDER IDENTIFIED. SYSTEMS GREEN.</div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <input id="co-pilot-input" type="text" placeholder="QUERY INTELLIGENCE..."
+                                class="flex-1 bg-frontier-deep border border-frontier-indigo/30 p-4 text-xs text-white placeholder-frontier-text/40 tracking-[0.2em] focus:border-frontier-lime outline-none"
+                                onkeydown="if(event.key==='Enter') navCommand()" />
+                            <button onclick="navCommand()"
+                                class="bg-frontier-lime text-frontier-deep px-8 font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all">Transmit</button>
+                        </div>
+
+                        <!-- Quick suggestions -->
+                        <div class="mt-8 flex flex-wrap gap-3">
+                            <button onclick="quickQuery('Is this area safe?')"
+                                class="text-[9px] font-black uppercase tracking-widest border border-frontier-indigo/20 px-3 py-1 hover:border-frontier-indigo">Safety
+                                Check</button>
+                            <button onclick="quickQuery('Nearby cheap hotels?')"
+                                class="text-[9px] font-black uppercase tracking-widest border border-frontier-indigo/20 px-3 py-1 hover:border-frontier-indigo">Budget
+                                Stays</button>
+                            <button onclick="quickQuery('Hidden gems in 10km?')"
+                                class="text-[9px] font-black uppercase tracking-widest border border-frontier-indigo/20 px-3 py-1 hover:border-frontier-indigo">Hidden
+                                Gems</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Testimonial -->
+    <section class="py-32 px-6 border-t border-frontier-indigo/10">
+        <div class="max-w-4xl mx-auto text-center">
+            <span class="material-symbols-outlined text-frontier-lime text-6xl mb-8"
+                style="font-variation-settings: 'FILL' 1;">format_quote</span>
+            <blockquote
+                class="font-headline font-light text-3xl md:text-5xl text-white leading-tight mb-12 uppercase tracking-tight italic">
+                "Zentryx didn't just help me plan a trip; it synced my frequency with the world. Every turn felt like
+                a programmed sequence of beauty."
+            </blockquote>
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full overflow-hidden mb-4 border border-frontier-indigo">
+                    <img alt="User profile"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUMMeZDpMj3Q-AKSRb7AyjfWIgckZz13QRxmUaaYKSDYRiLVCt1ewKKNR-yQzLzaawKqC6H_-8kyHWl-vXO6ahTMO4xJCBAKWqAG5uSObnwJ0Pzq1WUOGCZgBr51JeX7z_kX5J5Q7_fzdtIt031SLU2DsnvUP9aPINimJKcuAFfrLkwXFzDsiVGrd8GJWZjHwmEwBbqXDHPznIJpehnhnmKV7hYmUE0qeg7EMB37Sj3TloN1ywCBp92nzFn7wAe6NXaUT2t2bv1ow9" />
+                </div>
+                <h4 class="font-bold text-white uppercase tracking-widest">Marcus Thorne</h4>
+                <p class="text-xs text-frontier-indigo uppercase tracking-[0.3em] mt-1">Frequent Traveler</p>
+            </div>
+        </div>
+    </section>
+    <!-- Footer -->
+    <footer class="bg-frontier-navy border-t border-frontier-indigo/10 py-20 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div class="md:col-span-2">
+                <div class="text-2xl font-black tracking-widest text-frontier-indigo mb-6">ZENTRYX</div>
+                <p class="text-frontier-text max-w-sm mb-8 leading-relaxed text-sm uppercase tracking-wider">
+                    Your trusted platform for seamless global travel. Discover new places and travel with confidence.
+                </p>
+                <div class="flex gap-4">
+                    <div
+                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-xl">language</span>
+                    </div>
+                    <div
+                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-xl">camera</span>
+                    </div>
+                    <div
+                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-xl">share</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h5
+                    class="font-bold text-white mb-6 uppercase tracking-widest text-xs border-l-2 border-frontier-lime pl-3">
+                    Navigation</h5>
+                <ul class="space-y-4 text-frontier-text text-xs uppercase tracking-widest">
+                    <li><a class="hover:text-frontier-lime transition-colors" href="#">Community</a></li>
+                    <li><a class="hover:text-frontier-lime transition-colors" href="#">Travel Blog</a></li>
+                    <li><a class="hover:text-frontier-lime transition-colors" href="#">Partners</a></li>
+                    <li><a class="hover:text-frontier-lime transition-colors" href="#">User Reviews</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5
+                    class="font-bold text-white mb-6 uppercase tracking-widest text-xs border-l-2 border-frontier-indigo pl-3">
+                    Legal & Support</h5>
+                <ul class="space-y-4 text-frontier-text text-xs uppercase tracking-widest">
+                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Our Story</a></li>
+                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Privacy Policy</a></li>
+                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Terms of Use</a></li>
+                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Contact Us</a></li>
+                </ul>
+            </div>
+        </div>
+        <div
+            class="max-w-7xl mx-auto mt-20 pt-8 border-t border-frontier-indigo/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-frontier-indigo/40 uppercase tracking-[0.3em] font-black">
+            <p>© 2024 ZENTRYX. SECURE & PRIVATE.</p>
+            <p>BUILT FOR MODERN TRAVELERS.</p>
+        </div>
+    </footer>
+    <!-- Chat & FAB Area -->
+    <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end">
+        <!-- Chat Widget Panel (Hidden by default) -->
+        <div id="ai-chat-widget"
+            class="hidden w-[480px] glass-frontier shadow-2xl mb-4 overflow-hidden border border-frontier-indigo/30 transition-all duration-300 origin-bottom-right">
+            <!-- Header -->
+            <div class="bg-[#11192e]/90 p-4 border-b border-frontier-indigo/20 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-frontier-lime text-xl"
+                        style="font-variation-settings: 'FILL' 1;">forum</span>
+                    <h3 class="font-bold text-white uppercase tracking-widest text-sm">Comms Hub</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openApiKeyModal()"
+                        class="text-frontier-text hover:text-frontier-lime transition-colors" title="AI Settings">
+                        <span class="material-symbols-outlined text-sm">settings</span>
+                    </button>
+                    <button onclick="toggleChat()" class="text-frontier-text hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Messages Area -->
+            <div id="chat-messages"
+                class="h-[450px] overflow-y-auto p-4 space-y-4 bg-frontier-deep/70 text-sm font-['Space_Grotesk'] scroll-smooth">
+                <div class="flex gap-3">
+                    <span class="material-symbols-outlined text-frontier-lime mt-1 text-lg">smart_toy</span>
+                    <div
+                        class="bg-[#11192e]/80 border border-frontier-indigo/20 rounded-sm p-3 text-frontier-text shadow-lg">
+                        <p class="text-[13px] leading-relaxed">Hi! I'm Zentryx AI. Tag <span
+                                class="text-frontier-lime font-bold">@ai</span> to ask me anything. I work offline with
+                            travel data for popular routes. For unlimited intelligence, click the <span
+                                class="text-frontier-lime font-bold">⚙ gear</span> icon to add your free Gemini API key.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- Input Area -->
+            <div class="p-3 border-t border-frontier-indigo/20 bg-[#11192e]/90 flex items-center gap-2">
+                <input id="chat-input" type="text" placeholder="Transmit message..."
+                    class="flex-1 bg-frontier-deep border border-frontier-indigo/30 rounded-sm px-3 py-2 text-[13px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-lime"
+                    onkeypress="handleKeyPress(event)" />
+                <button onclick="sendMessage()"
+                    class="w-10 h-10 bg-frontier-indigo/20 hover:bg-frontier-indigo hover:text-frontier-deep border border-frontier-indigo/40 rounded-sm flex items-center justify-center text-frontier-indigo transition-all">
+                    <span class="material-symbols-outlined text-sm">send</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- FAB Toggle Button -->
+        <button onclick="toggleChat()"
+            class="w-16 h-16 bg-frontier-indigo text-frontier-deep shadow-[0_0_20px_rgba(163,166,255,0.4)] rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300">
+            <span id="fab-icon" class="material-symbols-outlined text-3xl font-black">forum</span>
+        </button>
+    </div>
+
+    <!-- API Key Settings Modal -->
+    <div id="apikey-modal"
+        class="fixed inset-0 z-[250] hidden items-center justify-center bg-frontier-deep/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div class="glass-frontier p-8 border border-frontier-lime/30 w-[95%] max-w-lg shadow-[0_0_40px_rgba(206,238,147,0.1)] relative scale-95 transition-transform duration-300"
+            id="apikey-modal-content">
+            <button onclick="closeApiKeyModal()"
+                class="absolute top-4 right-4 text-frontier-text hover:text-white transition-colors"><span
+                    class="material-symbols-outlined">close</span></button>
+            <div class="flex items-center gap-3 mb-6">
+                <span class="material-symbols-outlined text-frontier-lime text-2xl">key</span>
+                <h3 class="font-headline font-black text-white text-xl uppercase tracking-widest">AI Configuration</h3>
+            </div>
+            <p class="text-frontier-text text-[13px] leading-relaxed mb-4">Enter your free Google Gemini API key to
+                unlock full AI intelligence. Get one free at <a href="https://aistudio.google.com/apikey"
+                    target="_blank" class="text-frontier-lime underline hover:text-white">aistudio.google.com/apikey</a>
+            </p>
+            <input id="gemini-key-input" type="password" placeholder="Paste your Gemini API key here..."
+                class="w-full bg-frontier-deep border border-frontier-indigo/30 px-4 py-3 text-[13px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-lime mb-3" />
+            <div id="apikey-status" class="text-[11px] uppercase tracking-widest mb-4 h-4"></div>
+            <div class="flex gap-3">
+                <button onclick="saveApiKey()"
+                    class="flex-1 py-3 bg-frontier-lime/10 border border-frontier-lime/40 text-frontier-lime font-bold text-xs uppercase tracking-widest hover:bg-frontier-lime/20 transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-sm">save</span> Save Key
+                </button>
+                <button onclick="clearApiKey()"
+                    class="py-3 px-4 bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-widest hover:bg-red-500/20 transition-colors">Clear</button>
+            </div>
+            <p class="text-frontier-text/50 text-[10px] mt-4 leading-relaxed">Without a key, Zentryx uses its offline
+                travel database. With a key, it connects to Google's Gemini AI for unlimited intelligence.</p>
+        </div>
+    </div>
+
+    <!-- Weather Forecast Modal (dedicated) -->
+    <div id="weather-modal"
+        class="fixed inset-0 z-[200] hidden items-center justify-center bg-frontier-deep/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div class="glass-frontier p-8 border border-frontier-lime/30 w-[95%] max-w-2xl shadow-[0_0_40px_rgba(206,238,147,0.1)] relative scale-95 transition-transform duration-300"
+            id="weather-modal-content">
+            <button onclick="closeWeatherModal()"
+                class="absolute top-4 right-4 text-frontier-text hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="flex items-center gap-4 mb-6 pb-4 border-b border-frontier-lime/20">
+                <span class="material-symbols-outlined text-4xl text-frontier-lime"
+                    style="font-variation-settings: 'FILL' 1;">partly_cloudy_day</span>
+                <div>
+                    <h2 class="font-headline font-black text-2xl text-white uppercase tracking-widest">12-Hour Forecast
+                    </h2>
+                    <div
+                        class="text-[10px] text-frontier-lime tracking-[0.3em] uppercase border-l border-frontier-lime pl-2 mt-1">
+                        LIVE SATELLITE DATA // OPEN-METEO</div>
+                </div>
+            </div>
+            <div id="forecast-grid" class="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6"></div>
+            <p class="text-[9px] text-frontier-text italic text-center">Data synchronized via Open-Meteo Global
+                Satellite Grid. Updated every hour.</p>
+        </div>
+    </div>
+    <div id="hud-modal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-frontier-deep/90 backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div class="glass-frontier p-8 border border-frontier-lime/30 w-[90%] max-w-md shadow-[0_0_30px_rgba(206,238,147,0.1)] relative scale-95 transition-transform duration-300"
+            id="hud-modal-content">
+            <button onclick="closeModal()"
+                class="absolute top-4 right-4 text-frontier-text hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="flex items-center gap-4 mb-6 pb-4 border-b border-frontier-indigo/20">
+                <span class="material-symbols-outlined text-4xl text-frontier-lime neon-glow-lime"
+                    style="font-variation-settings: 'FILL' 1;">vpn_key</span>
+                <div>
+                    <h2 id="modal-title" class="font-headline font-black text-2xl text-white uppercase tracking-widest">
+                        System Access</h2>
+                    <div
+                        class="text-[10px] text-frontier-lime tracking-[0.3em] uppercase border-l border-frontier-lime pl-2 mt-1">
+                        Auth_Req</div>
+                </div>
+            </div>
+            <p id="modal-message"
+                class="text-frontier-text text-sm uppercase tracking-wider mb-8 leading-relaxed border-l-2 border-frontier-indigo/30 pl-4 py-2">
+                ...
+            </p>
+            <button onclick="closeModal()"
+                class="w-full bg-frontier-indigo/10 border border-frontier-indigo text-frontier-indigo py-3 font-bold uppercase tracking-widest hover:bg-frontier-indigo hover:text-frontier-deep transition-all duration-300">
+                Acknowledge
+            </button>
+        </div>
+    </div>
+    <div id="budget-modal"
+        class="fixed inset-0 z-[250] hidden items-center justify-center bg-frontier-deep/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div class="glass-frontier p-8 border border-frontier-indigo/30 w-[95%] max-w-5xl shadow-[0_0_40px_rgba(163,166,255,0.15)] relative scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto"
+            id="budget-modal-content">
+            <button onclick="closeBudgetModal()"
+                class="absolute top-4 right-4 text-frontier-text hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="flex items-center gap-4 mb-8 pb-4 border-b border-frontier-indigo/20">
+                <span class="material-symbols-outlined text-4xl text-frontier-indigo neon-glow-indigo"
+                    style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+                <div>
+                    <h2 class="font-headline font-black text-2xl text-white uppercase tracking-widest">AI Travel Budget
+                    </h2>
+                    <div
+                        class="text-[10px] text-frontier-indigo tracking-[0.3em] uppercase border-l border-frontier-indigo pl-2 mt-1">
+                        SMART ESTIMATES // GLOBAL DATA</div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label
+                        class="text-[10px] uppercase font-bold text-frontier-lime tracking-widest block mb-1 border-l-2 border-frontier-lime pl-2">Origin</label>
+                    <input type="text" id="budget-origin" placeholder="e.g. Amritsar"
+                        class="w-full bg-[#11192e] border border-frontier-indigo/30 text-white p-3 font-body focus:outline-none focus:border-frontier-indigo transition-colors placeholder-white/30">
+                </div>
+                <div>
+                    <label
+                        class="text-[10px] uppercase font-bold text-frontier-lime tracking-widest block mb-1 border-l-2 border-frontier-lime pl-2">Destination</label>
+                    <input type="text" id="budget-dest" placeholder="e.g. Shimla or Tokyo"
+                        class="w-full bg-[#11192e] border border-frontier-indigo/30 text-white p-3 font-body focus:outline-none focus:border-frontier-indigo transition-colors placeholder-white/30">
+                </div>
+                <div>
+                    <label
+                        class="text-[10px] uppercase font-bold text-frontier-lime tracking-widest block mb-1 border-l-2 border-frontier-lime pl-2">Currency
+                        (Optional)</label>
+                    <input type="text" id="budget-currency" placeholder="e.g. INR or Both if Intl."
+                        class="w-full bg-[#11192e] border border-frontier-indigo/30 text-white p-3 font-body focus:outline-none focus:border-frontier-indigo transition-colors placeholder-white/30">
+                </div>
+            </div>
+            <div class="text-[9px] text-frontier-text uppercase italic mb-8 mt-2 ml-1">* If travelling internationally,
+                leave currency blank to see both origin/destination currencies.</div>
+
+            <button onclick="generateBudget()" id="budget-btn"
+                class="w-full bg-frontier-indigo text-frontier-deep px-6 py-4 font-bold uppercase tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 neon-glow-indigo mb-8 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">psychology</span> Generate Intel
+            </button>
+
+            <!-- Loading State -->
+            <div id="budget-loading"
+                class="hidden flex-col items-center justify-center py-16 border border-frontier-indigo/10 bg-[#11192e]/50">
+                <span class="material-symbols-outlined text-5xl text-frontier-lime animate-spin mb-4">settings</span>
+                <div class="text-[10px] text-frontier-lime tracking-[0.3em] font-bold uppercase animate-pulse">Syncing
+                    local travel nodes & economic data...</div>
+                <div class="text-[9px] text-frontier-text uppercase mt-2 w-2/3 text-center">Processing community
+                    ratings, travel lines, and hotel availability via Neural Link.</div>
+            </div>
+
+            <!-- Output Grid -->
+            <div id="budget-grid" class="hidden grid md:grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+    <style>
+        /* Cinematic Scroll Animation Classes */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(80px) scale(0.95);
+            transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform, opacity;
+        }
+
+        .scroll-slide-left {
+            opacity: 0;
+            transform: translateX(-100px);
+            transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform, opacity;
+        }
+
+        .scroll-slide-right {
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform, opacity;
+        }
+
+        .scroll-scale-up {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .is-visible {
+            opacity: 1 !important;
+            transform: translate(0, 0) scale(1);
+        }
+
+        /* Navbar dynamic styles */
+        .nav-scrolled {
+            background: rgba(7, 13, 31, 0.95) !important;
+            backdrop-filter: blur(24px) !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+            border-bottom: 1px solid rgba(163, 166, 255, 0.2);
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+            z-index: 10;
+            border: 1px solid rgba(163, 166, 255, 0.2);
+        }
+
+        .leaflet-container {
+            background: #070d1f !important;
+        }
+
+        .leaflet-tile {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+
+        .co-pilot-panel {
+            border-left: 2px solid #ceee93;
+        }
+
+        /* Leaflet popup dark theme override */
+        .custom-popup .leaflet-popup-content-wrapper {
+            background: transparent;
+            border: none;
+            box-shadow: 0 0 20px rgba(163, 166, 255, 0.3);
+            border-radius: 4px;
+            padding: 0;
+        }
+
+        .custom-popup .leaflet-popup-content {
+            margin: 0;
+        }
+
+        .custom-popup .leaflet-popup-tip-container {
+            display: none;
+        }
+
+        .leaflet-popup-close-button {
+            color: #a3a6ff !important;
+            font-size: 14px !important;
+            top: 4px !important;
+            right: 4px !important;
+        }
+    </style>
+    <script>
+        // --- AI BUDGET PLANNER ---
+        function openBudgetModal() {
+            const modal = document.getElementById('budget-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('budget-modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeBudgetModal() {
+            const modal = document.getElementById('budget-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('budget-modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        async function generateBudget() {
+            const origin = document.getElementById('budget-origin').value.trim();
+            const dest = document.getElementById('budget-dest').value.trim();
+            const currency = document.getElementById('budget-currency').value.trim();
+
+            if (!origin || !dest) {
+                alert("Please provide both Origin and Destination.");
+                return;
+            }
+
+            const btn = document.getElementById('budget-btn');
+            const loading = document.getElementById('budget-loading');
+            const grid = document.getElementById('budget-grid');
+
+            btn.classList.add('hidden');
+            grid.classList.add('hidden');
+            loading.classList.remove('hidden');
+            loading.classList.add('flex');
+
+            let currencyInstruct = "Use both local currencies (origin currency and destination currency) in the estimations if it is international. E.g. (100 INR / 150 Yen).";
+            if (currency) {
+                currencyInstruct = `Use ${currency} for all prices.`;
+            }
+
+            const prompt = `Return a JSON object containing a travel budget from ${origin} to ${dest}. ${currencyInstruct} The JSON must have exactly 3 keys: "cheapest", "moderate", "expensive". Each key must be an object with these exact keys: "travel_cost" (local travelling prices), "hotel_rating" (like 2-star, 3-star), "hotel_cost" (hotel booking prices), "tickets" (train/flight fee), "food" (food expenses), "total" (total budget). Return ONLY raw JSON, do NOT use markdown or backticks.`;
+
+            try {
+                let text = null;
+
+                // Try Gemini API first
+                text = await queryBudgetAI(prompt);
+
+                // If no Gemini key or failed, use offline estimation
+                if (!text) {
+                    const route = findRoute(origin + " " + dest);
+                    const dc = TRAVEL_DB.dailyCosts;
+                    if (route) {
+                        const data = {
+                            "cheapest": { travel_cost: route.busCost || route.trainCost, hotel_rating: "1-2 star / Hostel", hotel_cost: dc.india_budget.hotel + "/night", tickets: route.trainCost, food: dc.india_budget.food + "/day", total: "Approx 2000-4000 INR/day" },
+                            "moderate": { travel_cost: route.trainCost, hotel_rating: "3 star", hotel_cost: dc.india_moderate.hotel + "/night", tickets: route.trainCost, food: dc.india_moderate.food + "/day", total: "Approx 4000-8000 INR/day" },
+                            "expensive": { travel_cost: route.flightCost, hotel_rating: "4-5 star", hotel_cost: dc.india_luxury.hotel + "/night", tickets: route.flightCost, food: dc.india_luxury.food + "/day", total: "Approx 12000-25000 INR/day" }
+                        };
+                        text = JSON.stringify(data);
+                    } else {
+                        // Generic fallback
+                        const data = {
+                            "cheapest": { travel_cost: "500-1500 INR", hotel_rating: "1-2 star / Hostel", hotel_cost: "500-1000 INR/night", tickets: "800-2500 INR", food: "300-500 INR/day", total: "Approx 2000-5000 INR/day" },
+                            "moderate": { travel_cost: "1000-3000 INR", hotel_rating: "3 star", hotel_cost: "2000-4000 INR/night", tickets: "1500-4000 INR", food: "800-1500 INR/day", total: "Approx 5000-10000 INR/day" },
+                            "expensive": { travel_cost: "3000-8000 INR", hotel_rating: "4-5 star", hotel_cost: "8000-15000 INR/night", tickets: "4000-10000 INR", food: "2000-4000 INR/day", total: "Approx 15000-30000 INR/day" }
+                        };
+                        text = JSON.stringify(data);
+                    }
+                }
+
+                // Robust JSON extraction
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) throw new Error("Format exception: No JSON struct found.");
+
+                const data = JSON.parse(jsonMatch[0]);
+
+                grid.innerHTML = '';
+                const tiers = [
+                    { id: 'cheapest', label: 'Backpacker', icon: 'hiking', color: '#a3a6ff', hex: '[#a3a6ff]', bg: 'bg-frontier-indigo/20' },
+                    { id: 'moderate', label: 'Standard', icon: 'directions_car', color: '#ceee93', hex: '[#ceee93]', bg: 'bg-frontier-lime/20' },
+                    { id: 'expensive', label: 'Luxury', icon: 'flight_takeoff', color: '#ffb3c6', hex: '[#ffb3c6]', bg: 'bg-pink-500/20' }
+                ];
+
+                tiers.forEach(t => {
+                    const d = data[t.id];
+                    if (d) {
+                        grid.innerHTML += `
+                <div class="border border-${t.hex} ${t.bg} p-6 relative group transition-transform duration-300">
+                    <div class="absolute -top-4 -right-4 w-12 h-12 bg-[#11192e] border border-${t.hex} rounded-full flex items-center justify-center shadow-lg">
+                        <span class="material-symbols-outlined" style="color: ${t.color}">${t.icon}</span>
+                    </div>
+                    <h3 class="font-headline font-black text-white text-xl uppercase tracking-widest mb-1">${t.id}</h3>
+                    <div class="text-[10px] text-frontier-text uppercase tracking-widest mb-6">${t.label} Tier</div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div><div class="text-[9px] text-frontier-text uppercase">Local Travel</div><div class="font-bold text-white text-sm">${d.travel_cost}</div></div>
+                        <div><div class="text-[9px] text-frontier-text uppercase">Hotel (${d.hotel_rating})</div><div class="font-bold text-white text-sm">${d.hotel_cost}</div></div>
+                        <div><div class="text-[9px] text-frontier-text uppercase">Tickets Fee</div><div class="font-bold text-white text-sm">${d.tickets}</div></div>
+                        <div><div class="text-[9px] text-frontier-text uppercase">Food Expenses</div><div class="font-bold text-white text-sm">${d.food}</div></div>
+                    </div>
+                    
+                    <div class="border-t border-${t.hex} pt-4">
+                        <div class="text-[10px] text-frontier-text uppercase tracking-widest mb-1">Total Est.</div>
+                        <div class="font-headline font-black text-2xl" style="color: ${t.color}">${d.total}</div>
+                    </div>
+                </div>`;
+                    }
+                });
+
+            } catch (e) {
+                console.error(e);
+                grid.innerHTML = '<div class="col-span-3 text-red-500 text-center font-bold tracking-widest p-8 border border-red-500/30 bg-red-500/10 uppercase">Data Synchronization Failed. The AI returned an invalid unstructured format. Try regenerating.</div>';
+            } finally {
+                loading.classList.add('hidden');
+                loading.classList.remove('flex');
+                grid.classList.remove('hidden');
+                btn.classList.remove('hidden');
+                btn.innerHTML = '<span class="material-symbols-outlined">refresh</span> Recalculate';
+            }
+        }
+
+        // --- GLOBAL UI FUNCTIONS ---
+        function toggleChat() {
+            const chatWidget = document.getElementById('ai-chat-widget');
+            const fabIcon = document.getElementById('fab-icon');
+            if (chatWidget.classList.contains('hidden')) {
+                chatWidget.classList.remove('hidden');
+                chatWidget.classList.add('flex', 'flex-col');
+                fabIcon.innerText = "close";
+                setTimeout(() => document.getElementById('chat-input').focus(), 100);
+            } else {
+                chatWidget.classList.add('hidden');
+                chatWidget.classList.remove('flex', 'flex-col');
+                fabIcon.innerText = "forum";
+            }
+        }
+
+        // --- API KEY MANAGEMENT ---
+        function openApiKeyModal() {
+            const modal = document.getElementById('apikey-modal');
+            const input = document.getElementById('gemini-key-input');
+            const saved = localStorage.getItem('zentryx_gemini_key');
+            if (saved) input.value = saved;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('apikey-modal-content').classList.remove('scale-95');
+            }, 10);
+            updateApiKeyStatus();
+        }
+
+        function closeApiKeyModal() {
+            const modal = document.getElementById('apikey-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('apikey-modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('gemini-key-input').value.trim();
+            if (key) {
+                localStorage.setItem('zentryx_gemini_key', key);
+                updateApiKeyStatus();
+                setTimeout(() => closeApiKeyModal(), 800);
+            }
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem('zentryx_gemini_key');
+            document.getElementById('gemini-key-input').value = '';
+            updateApiKeyStatus();
+        }
+
+        function updateApiKeyStatus() {
+            const el = document.getElementById('apikey-status');
+            const key = localStorage.getItem('zentryx_gemini_key');
+            if (key) {
+                el.innerHTML = '<span class="text-frontier-lime">Connected to Gemini AI</span>';
+            } else {
+                el.innerHTML = '<span class="text-yellow-400">Offline mode — using local travel database</span>';
+            }
+        }
+
+        // --- OFFLINE TRAVEL INTELLIGENCE DATABASE ---
+        const TRAVEL_DB = {
+            routes: {
+                "amritsar_udaipur": { distance: "980 km", train: "18-22 hours (via Delhi/Jaipur)", trainCost: "800-2500 INR", bus: "16-20 hours", busCost: "900-1800 INR", flight: "3-4 hours (1 stop)", flightCost: "4000-8000 INR" },
+                "amritsar_shimla": { distance: "260 km", train: "8-10 hours (via Kalka)", trainCost: "350-1200 INR", bus: "6-8 hours", busCost: "400-800 INR", flight: "N/A (nearest Chandigarh)", flightCost: "3000-5000 INR" },
+                "amritsar_delhi": { distance: "450 km", train: "6-8 hours", trainCost: "400-1800 INR", bus: "7-9 hours", busCost: "500-1200 INR", flight: "1.5 hours", flightCost: "3000-6000 INR" },
+                "delhi_mumbai": { distance: "1400 km", train: "16-22 hours", trainCost: "600-3500 INR", bus: "22-26 hours", busCost: "1000-2500 INR", flight: "2 hours", flightCost: "3500-8000 INR" },
+                "delhi_goa": { distance: "1900 km", train: "26-34 hours", trainCost: "800-3000 INR", bus: "28-32 hours", busCost: "1200-2500 INR", flight: "2.5 hours", flightCost: "4000-9000 INR" },
+                "delhi_jaipur": { distance: "280 km", train: "4-5 hours", trainCost: "300-1200 INR", bus: "5-6 hours", busCost: "400-900 INR", flight: "1 hour", flightCost: "2500-5000 INR" },
+                "mumbai_goa": { distance: "590 km", train: "8-12 hours", trainCost: "500-2000 INR", bus: "10-14 hours", busCost: "600-1500 INR", flight: "1.5 hours", flightCost: "2500-6000 INR" },
+                "delhi_manali": { distance: "540 km", train: "14 hours (to Chandigarh+bus)", trainCost: "500-1500 INR", bus: "12-14 hours", busCost: "700-1500 INR", flight: "N/A (via Kullu)", flightCost: "4000-7000 INR" },
+                "bangalore_chennai": { distance: "350 km", train: "5-6 hours", trainCost: "300-1200 INR", bus: "6-7 hours", busCost: "400-1000 INR", flight: "1 hour", flightCost: "2500-5000 INR" },
+                "kolkata_darjeeling": { distance: "600 km", train: "10-12 hours (to NJP)", trainCost: "500-1800 INR", bus: "14-16 hours", busCost: "600-1200 INR", flight: "1 hour (to Bagdogra)", flightCost: "3500-7000 INR" },
+                "amritsar_tokyo": { distance: "6200 km", train: "N/A", trainCost: "N/A", bus: "N/A", busCost: "N/A", flight: "10-14 hours (1-2 stops)", flightCost: "35000-85000 INR / 60000-150000 JPY" },
+                "delhi_bangkok": { distance: "2900 km", train: "N/A", trainCost: "N/A", bus: "N/A", busCost: "N/A", flight: "4 hours", flightCost: "8000-25000 INR / 3500-11000 THB" },
+                "delhi_dubai": { distance: "2200 km", train: "N/A", trainCost: "N/A", bus: "N/A", busCost: "N/A", flight: "3.5 hours", flightCost: "10000-30000 INR / 450-1300 AED" },
+                "mumbai_singapore": { distance: "3900 km", train: "N/A", trainCost: "N/A", bus: "N/A", busCost: "N/A", flight: "5.5 hours", flightCost: "12000-35000 INR / 220-650 SGD" },
+            },
+            dailyCosts: {
+                "india_budget": { hotel: "500-1000 INR", food: "300-500 INR", local: "200-400 INR" },
+                "india_moderate": { hotel: "2000-4000 INR", food: "800-1500 INR", local: "500-1000 INR" },
+                "india_luxury": { hotel: "8000-15000 INR", food: "2000-4000 INR", local: "1500-3000 INR" },
+                "japan_budget": { hotel: "3000-5000 JPY / 1700-2800 INR", food: "1500-3000 JPY / 850-1700 INR", local: "1000-2000 JPY / 570-1130 INR" },
+                "japan_moderate": { hotel: "8000-15000 JPY", food: "3000-6000 JPY", local: "2000-4000 JPY" },
+                "thailand_budget": { hotel: "500-1000 THB / 1200-2400 INR", food: "300-600 THB / 720-1440 INR", local: "200-500 THB / 480-1200 INR" },
+                "dubai_budget": { hotel: "200-400 AED / 4500-9000 INR", food: "80-150 AED / 1800-3400 INR", local: "50-100 AED / 1100-2300 INR" },
+            },
+            hotels: {
+                "amritsar": [
+                    { name: "Taj Swarna", price: "8,500 INR", priceVal: 8500, rating: 4.8, status: "3 rooms left", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
+                    { name: "Radisson Blu", price: "5,200 INR", priceVal: 5200, rating: 4.5, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" },
+                    { name: "Hyatt Regency", price: "6,800 INR", priceVal: 6800, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
+                    { name: "Hotel Ritz", price: "3,500 INR", priceVal: 3500, rating: 4.1, status: "5 rooms left", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
+                    { name: "Golden Tulip", price: "4,200 INR", priceVal: 4200, rating: 4.3, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
+                ],
+                "udaipur": [
+                    { name: "The Leela Palace", price: "25,000 INR", priceVal: 25000, rating: 4.9, status: "1 room left!", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
+                    { name: "Lake Pichola Hotel", price: "4,500 INR", priceVal: 4500, rating: 4.2, status: "Available", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
+                    { name: "Trident Udaipur", price: "12,000 INR", priceVal: 12000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
+                    { name: "Jagmandir Island Palace", price: "35,000 INR", priceVal: 35000, rating: 4.9, status: "Available", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
+                    { name: "Chunda Palace", price: "9,500 INR", priceVal: 9500, rating: 4.5, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
+                ],
+                "delhi": [
+                    { name: "The Lodhi", price: "18,000 INR", priceVal: 18000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400" },
+                    { name: "Bloomrooms @ Janpath", price: "3,800 INR", priceVal: 3800, rating: 4.4, status: "Fully booked", img: "https://images.unsplash.com/photo-1549294413-26f195200c16?w=400" },
+                    { name: "The Lalit New Delhi", price: "9,000 INR", priceVal: 9000, rating: 4.5, status: "5 rooms left", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
+                    { name: "Le Meridien", price: "11,500 INR", priceVal: 11500, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" },
+                    { name: "Andaz Delhi", price: "14,000 INR", priceVal: 14000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" }
+                ],
+                "mumbai": [
+                    { name: "Taj Mahal Palace", price: "22,000 INR", priceVal: 22000, rating: 4.9, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" },
+                    { name: "Sahara Star", price: "7,500 INR", priceVal: 7500, rating: 4.3, status: "5 rooms left", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
+                    { name: "The Oberoi", price: "20,000 INR", priceVal: 20000, rating: 4.8, status: "Available", img: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400" },
+                    { name: "JW Marriott Juhu", price: "16,000 INR", priceVal: 16000, rating: 4.7, status: "4 rooms left", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
+                    { name: "ITC Maratha", price: "13,000 INR", priceVal: 13000, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" }
+                ],
+                "goa": [
+                    { name: "W Goa", price: "15,000 INR", priceVal: 15000, rating: 4.8, status: "Available", img: "https://images.unsplash.com/photo-1512918766671-56001217329d?w=400" },
+                    { name: "Beleza By The Beach", price: "6,500 INR", priceVal: 6500, rating: 4.4, status: "Available", img: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=400" },
+                    { name: "The Leela Goa", price: "18,500 INR", priceVal: 18500, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
+                    { name: "Planet Hollywood", price: "9,000 INR", priceVal: 9000, rating: 4.3, status: "6 rooms left", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
+                    { name: "Novotel Goa Resort", price: "7,800 INR", priceVal: 7800, rating: 4.2, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
+                ]
+            },
+            tips: [
+                "Book train tickets on IRCTC 2-3 months in advance for the best prices.",
+                "Tatkal tickets open at 10 AM for AC and 11 AM for Sleeper class.",
+                "Use RailYatri or ixigo apps for live train status tracking.",
+                "Budget hotels can be found on OYO, Goibibo, or MakeMyTrip.",
+                "Always carry some cash in smaller towns — UPI may not work everywhere.",
+                "For international travel, book flights on Tuesdays for the best deals.",
+                "Use Google Maps offline mode — download maps before your trip.",
+            ]
+        };
+
+        function findRoute(text) {
+            const cities = Object.keys(TRAVEL_DB.routes).flatMap(k => k.split('_'));
+            const uniqueCities = [...new Set(cities)];
+            const found = [];
+            const lower = text.toLowerCase();
+            for (const city of uniqueCities) {
+                if (lower.includes(city)) found.push(city);
+            }
+            if (found.length >= 2) {
+                const key1 = found[0] + '_' + found[1];
+                const key2 = found[1] + '_' + found[0];
+                return TRAVEL_DB.routes[key1] || TRAVEL_DB.routes[key2] || null;
+            }
+            return null;
+        }
+
+        function getOfflineResponse(question) {
+            const q = question.toLowerCase();
+
+            // 1. GREETINGS (Higher priority to avoid mis-matching common word fragments)
+            if (/\b(hello|hi|hey|hii)\b/i.test(q)) {
+                return `Hello! I'm Zentryx, your travel intelligence assistant. I can help with travel routes, budgets, and tips across India and international destinations. Try asking me about a specific route like "Amritsar to Shimla" or "Delhi to Mumbai". For unlimited AI intelligence, add your free Gemini API key via the gear icon above!`;
+            }
+
+            // 2. Explicit check for advanced topics that need AI
+            const wideTopics = ['integra', 'derivat', 'calculus', 'physics', 'history', 'code', 'program', 'write', 'story'];
+            if (wideTopics.some(t => q.includes(t))) {
+                return `I'm currently in travel-only offline mode. For support with advanced queries like "${question.split(' ').pop()}", please add your free Gemini API key via the settings icon. It takes 30 seconds to connect to the cloud intelligence layer!`;
+            }
+
+            const route = findRoute(q);
+
+            if (route) {
+                let response = `Here is what I have in my travel database:\n`;
+                response += `Distance: ${route.distance}\n`;
+                if (route.train !== "N/A") response += `Train: ${route.train} — Cost: ${route.trainCost}\n`;
+                if (route.bus !== "N/A") response += `Bus: ${route.bus} — Cost: ${route.busCost}\n`;
+                response += `Flight: ${route.flight} — Cost: ${route.flightCost}\n`;
+
+                if (q.includes('budget') || q.includes('expense') || q.includes('cost') || q.includes('stay')) {
+                    response += `\nDaily expenses in India:\n`;
+                    response += `Budget: Hotel ${TRAVEL_DB.dailyCosts.india_budget.hotel}, Food ${TRAVEL_DB.dailyCosts.india_budget.food}, Local travel ${TRAVEL_DB.dailyCosts.india_budget.local}\n`;
+                    response += `Moderate: Hotel ${TRAVEL_DB.dailyCosts.india_moderate.hotel}, Food ${TRAVEL_DB.dailyCosts.india_moderate.food}, Local travel ${TRAVEL_DB.dailyCosts.india_moderate.local}\n`;
+                }
+
+                const tip = TRAVEL_DB.tips[Math.floor(Math.random() * TRAVEL_DB.tips.length)];
+                response += `\nTip: ${tip}`;
+                response += `\n\nFor more detailed and real-time planning, add your free Gemini API key via the settings gear icon in the chat header.`;
+                return response;
+            }
+
+            // 3. General travel keywords
+            if (q.includes('budget') || q.includes('cheap') || q.includes('expense')) {
+                return `For budget travel in India: Hotels range from 500-1000 INR/night (hostels/budget), Food costs about 300-500 INR/day at local eateries, Local transport is 200-400 INR/day using buses and autos. For a more personalized budget, configure your Gemini API key via the settings icon.`;
+            }
+            if (q.includes('hotel') || q.includes('stay') || q.includes('accommodation')) {
+                return `Hotel ranges in India: Budget (500-1500 INR), Mid-range (2000-5000 INR), Luxury (8000+ INR). I recommend booking via MakeMyTrip, OYO, or Goibibo for the best deals. Add your Gemini API key for specific hotel recommendations.`;
+            }
+            if (q.includes('train') || q.includes('rail') || q.includes('irctc')) {
+                return `Indian Railways tips: Book on irctc.co.in 120 days in advance for best availability. Tatkal opens at 10 AM (AC) / 11 AM (Sleeper). Classes: Sleeper (cheapest), 3AC, 2AC, 1AC (most expensive). General fare for 500km is roughly 350-2000 INR depending on class.`;
+            }
+            if (q.includes('flight') || q.includes('fly') || q.includes('airplane')) {
+                return `For domestic Indian flights: Book 1-2 months ahead on IndiGo, SpiceJet, or Air India. Average cost is 3000-8000 INR for most routes. International flights from India to SE Asia start around 8000-15000 INR. Book on Tuesdays for the cheapest fares!`;
+            }
+            if (q.includes('food') || q.includes('eat') || q.includes('restaurant')) {
+                return `Food costs in India: Street food 30-100 INR per meal, Local restaurants 100-300 INR, Mid-range restaurants 300-800 INR, Fine dining 1000+ INR. Thalis are the best value — a full meal for 80-200 INR. Always try local specialties!`;
+            }
+
+            // 4. Fun Adaptable Modules (Offline)
+            window.offlineLastTopic = window.offlineLastTopic || null;
+
+            if (q.includes('fire') || q.includes('survive')) {
+                window.offlineLastTopic = 'fire';
+                return `*Zentryx Survival Module (Offline)* 🔥 To start a fire: 1. Gather dry tinder (dry grass, leaves). 2. Collect kindling (small twigs). 3. Arrange in a teepee shape. 4. Light the tinder with a spark, match, or friction (like a bow drill). Gently blow on the ember to feed it oxygen!`;
+            }
+
+            // Follow-up handler
+            if (window.offlineLastTopic === 'fire' && (q.includes('simple') || q.includes('easier') || q.includes('understand') || q.includes('normal'))) {
+                return `*Survival Module (Simplified)*: Sorry about that! Here is the easiest way:\n1. Get very dry grass.\n2. Put small dry sticks over it like a pyramid.\n3. Light the grass with a lighter or match.\n4. Blow gently until the sticks catch fire.`;
+            }
+
+            // Reset memory on unrelated queries to avoid getting stuck
+            window.offlineLastTopic = null;
+
+            // 5. Ultimate Fallback
+            let cleanQ = question.toLowerCase();
+            if (cleanQ.startsWith("@ai ")) cleanQ = cleanQ.substring(4);
+            return `*Zentryx Core (Offline)*: I see you're asking about "${cleanQ.slice(0, 30).trim()}${cleanQ.length > 30 ? '...' : ''}". Right now, my connection to the global AI mainframe is disabled, so I only have my local travel databases active. Without my Neural Link (Gemini API key), I cannot remember our past conversation or answer dynamic questions. Please link the API key via the gear icon above!`;
+        }
+
+        // --- GEMINI AI ENGINE ---
+        async function queryGemini(prompt) {
+            window.geminiChatHistory = window.geminiChatHistory || [
+                { role: "user", parts: [{ text: "System Directive: You are Zentryx, an advanced, highly adaptive AI assistant running on a futuristic network. While your primary expertise is global travel, economics, and logistics, you are highly capable and happy to answer ANY question the user asks. Maintain a confident, friendly, and slightly futuristic personality. Answer naturally and adapt to the topic. Keep answers clear, concise, and use plain text only — no markdown. Do you understand?" }] },
+                { role: "model", parts: [{ text: "Understood. I am Zentryx. Initializing adaptable neural pathways. How can I assist you today, Commander?" }] }
+            ];
+            const currentContents = [...window.geminiChatHistory, { role: "user", parts: [{ text: prompt }] }];
+
+            const apiKey = localStorage.getItem('zentryx_gemini_key');
+            
+            // Seamless Global Intelligence without API Key (Pollinations Free Tier)
+            if (!apiKey) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                try {
+                    const pollinationsMessages = currentContents.map(c => ({
+                        role: c.role === "model" ? "assistant" : c.role,
+                        content: c.parts[0].text
+                    }));
+                    const res = await fetch('https://text.pollinations.ai/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        signal: controller.signal,
+                        body: JSON.stringify({ messages: pollinationsMessages })
+                    });
+                    clearTimeout(timeoutId);
+                    if (res.ok) {
+                        let text = await res.text();
+                        text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').trim();
+                        window.geminiChatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                        window.geminiChatHistory.push({ role: "model", parts: [{ text: text }] });
+                        return text;
+                    }
+                } catch(e) {
+                    clearTimeout(timeoutId);
+                    console.error("Free inference overloaded:", e);
+                }
+                return null; // Triggers offline database fallback
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+            try {
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        contents: currentContents,
+                        generationConfig: {
+                            maxOutputTokens: 1024,
+                            temperature: 0.7
+                        }
+                    })
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('Gemini API error:', errData);
+                    return null;
+                }
+
+                const data = await res.json();
+                let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                // Clean any remaining markdown
+                text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').trim();
+                
+                if (text) {
+                    window.geminiChatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                    window.geminiChatHistory.push({ role: "model", parts: [{ text: text }] });
+                }
+                
+                return text || null;
+            } catch (e) {
+                clearTimeout(timeoutId);
+                console.error('Gemini fetch error:', e);
+                return null;
+            }
+        }
+
+        async function queryAI(prompt) {
+            // Try Gemini first
+            const geminiResponse = await queryGemini(prompt);
+            if (geminiResponse && geminiResponse.length > 5) {
+                return geminiResponse;
+            }
+            // Fallback to offline database
+            return getOfflineResponse(prompt);
+        }
+
+        // --- GEMINI-POWERED BUDGET PLANNER ---
+        async function queryBudgetAI(prompt) {
+            const apiKey = localStorage.getItem('zentryx_gemini_key');
+            if (!apiKey) return null;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { maxOutputTokens: 1024, temperature: 0.5 }
+                    })
+                });
+
+                if (!res.ok) return null;
+                const data = await res.json();
+                return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function openModal(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+
+            const msgEl = document.getElementById('modal-message');
+            // Check if the message is HTML (contains tags) or just text
+            if (msg.includes('<')) {
+                msgEl.innerHTML = msg;
+            } else {
+                msgEl.innerText = msg;
+            }
+
+            const modal = document.getElementById('hud-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('hud-modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('hud-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('hud-modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // --- COMMUNITY INTELLIGENCE DATA (SMART MAP LAYER) ---
+        // Since this is a static demo, we simulate the crowd-sourced data with an active object.
+        var COMMUNITY_DATA = {
+            users: [
+                { id: 1, name: "Marcus_T001", lat: 31.1048, lon: 77.1734, status: "Eating at Cafe Sol, Shimla", trust: 5.0, vibe: "Verified Traveler" },
+                { id: 2, name: "Sara_Geo", lat: 31.1120, lon: 77.1680, status: "Hotel Ridge — 2 Rooms Left!", trust: 4.9, vibe: "Local Insider" },
+                { id: 3, name: "Arjun_X", lat: 31.1030, lon: 77.1850, status: "Trekking Jakhu Temple — Clear Path", trust: 4.2, vibe: "Explorer" }
+            ],
+            hotspots: [
+                { id: 101, name: "Cafe Sol", lat: 31.1044, lon: 77.1740, availability: "Medium Crowd", type: "cafe", posts: ["Best coffee in town!", "Live music at 8 PM."] },
+                { id: 102, name: "The Ridge Hotel", lat: 31.1055, lon: 77.1710, availability: "2 Rooms Left", type: "hotel", posts: ["Valley view is peak right now.", "Update: Fully booked for Friday."] },
+                { id: 103, name: "Mall Road Square", lat: 31.1040, lon: 77.1730, availability: "Peak Hours", type: "event", posts: ["Handicraft fair starting!"] }
+            ],
+            alerts: [
+                { id: 201, lat: 31.1150, lon: 77.1600, type: "weather", msg: "Light Rain starting soon in North Shimla", severity: "Medium" },
+                { id: 202, lat: 31.1045, lon: 77.1735, type: "traffic", msg: "Mall Road Traffic Alert: VIP Movement", severity: "High" }
+            ],
+            threads: [
+                { id: 1, user: "Marcus_T001", rank: "Verified Traveler", trust: "4.8★", msg: "Anyone headed to Kasol this weekend? Looking for a shared cab from Chandigarh. Split costs 50/50.", time: "2h ago" },
+                { id: 2, user: "Sara_Geo", rank: "Local Insider", trust: "5.0★", msg: "WARNING: Heavy fog on Shimla Bypass. Visibility is less than 5 meters. Take Kalka-Shimla highway instead.", time: "45m ago" },
+                { id: 3, user: "Traveler_99", rank: "Newbie", trust: "3.2★", msg: "Found a hidden cafe near Mall Road with free Wi-Fi and 500mbps speed! It's called 'CyberBrew'.", time: "10m ago" }
+            ],
+            ranking: [
+                { user: "Sara_Geo", assists: 142, xp: 980 },
+                { user: "Marcus_T001", assists: 89, xp: 620 },
+                { user: "Arjun_Explorer", assists: 45, xp: 310 }
+            ],
+            stories: [
+                { id: 1, loc: "Shimla Mall", user: "Marcus_T001", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH0Y8F--B6E6H2G88M_Z8Aqc98Yy7Dsd9L-x4H" },
+                { id: 2, loc: "Jakhu Temple", user: "Arjun_X", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCy-A6T-Z-y" }
+            ]
+        };
+
+        var mapLayers = {
+            users: L.layerGroup(),
+            hotspots: L.layerGroup(),
+            alerts: L.layerGroup()
+        };
+
+        var isVisibleOnMap = false;
+
+        function toggleVisibility() {
+            isVisibleOnMap = document.getElementById('meetup-toggle').checked;
+            const status = document.getElementById('visibility-status');
+            if (isVisibleOnMap) {
+                status.innerText = "Broadcasting Position";
+                status.classList.remove('text-frontier-text');
+                status.classList.add('text-frontier-lime');
+                addLog("Visibility active. Nearby travelers can see your location.");
+            } else {
+                status.innerText = "Incognito Mode";
+                status.classList.add('text-frontier-text');
+                status.classList.remove('text-frontier-lime');
+                addLog("Incognito active. Ghost protocol initiated.");
+            }
+            renderMapIntel();
+        }
+
+        function renderMapIntel() {
+            if (!mainMap) return;
+
+            // Clear old
+            mapLayers.users.clearLayers();
+            mapLayers.hotspots.clearLayers();
+            mapLayers.alerts.clearLayers();
+
+            // Render Users
+            COMMUNITY_DATA.users.forEach(u => {
+                const marker = L.marker([u.lat, u.lon], {
+                    icon: L.divIcon({
+                        className: '',
+                        html: `<div class="relative group cursor-pointer">
+                    <div class="w-8 h-8 rounded-full border-2 border-frontier-indigo animate-pulse p-0.5 bg-frontier-navy overflow-hidden">
+                        <img src="https://i.pravatar.cc/150?u=${u.id}" class="rounded-full w-full h-full object-cover">
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 bg-frontier-lime w-2.5 h-2.5 rounded-full border border-frontier-deep"></div>
+                </div>`,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    })
+                });
+                marker.bindPopup(`
+            <div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[200px]">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-black text-white uppercase">${u.name}</span>
+                    <span class="reputation-badge">Trust: ${u.trust}★</span>
+                </div>
+                <p class="text-[9px] text-frontier-indigo uppercase tracking-wider italic mb-3">"${u.status}"</p>
+                <div class="flex gap-2">
+                    <button class="flex-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-[8px] font-bold py-1 uppercase text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep">Message</button>
+                    <button class="flex-1 bg-frontier-lime/10 border border-frontier-lime/30 text-[8px] font-bold py-1 uppercase text-frontier-lime hover:bg-frontier-lime hover:text-frontier-deep">Invite</button>
+                </div>
+            </div>
+        `, { className: 'custom-popup' });
+                mapLayers.users.addLayer(marker);
+            });
+
+            // Render Hotspots (Cafes, Hotels with availability)
+            COMMUNITY_DATA.hotspots.forEach(h => {
+                const color = h.type === 'hotel' ? '#a3a6ff' : '#ceee93';
+                const icon = h.type === 'hotel' ? 'hotel' : h.type === 'cafe' ? 'local_cafe' : 'star';
+
+                const marker = L.marker([h.lat, h.lon], {
+                    icon: L.divIcon({
+                        className: '',
+                        html: `<div class="w-10 h-10 glass-frontier rounded-lg border border-${h.type === 'hotel' ? 'frontier-indigo' : 'frontier-lime'}/40 flex items-center justify-center text-${h.type === 'hotel' ? 'frontier-indigo' : 'frontier-lime'} shadow-xl">
+                    <span class="material-symbols-outlined text-lg">${icon}</span>
+                </div>`,
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
+                    })
+                });
+
+                marker.bindPopup(`
+            <div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[220px]">
+                <h4 class="text-xs font-black text-white uppercase mb-1">${h.name}</h4>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-[8px] font-bold uppercase tracking-widest text-frontier-lime">${h.availability}</span>
+                    <span class="w-1 h-1 bg-white/20 rounded-full"></span>
+                    <span class="text-[8px] text-frontier-text uppercase">${h.type}</span>
+                </div>
+                <div class="space-y-2 mb-4">
+                    ${h.posts.map(p => `<div class="text-[9px] text-frontier-indigo border-l-2 border-frontier-indigo/30 pl-2">"${p}"</div>`).join('')}
+                </div>
+                <button onclick="updateAvailability(${h.id})" class="w-full bg-[#fff]/5 border border-[#fff]/10 text-[8px] font-black py-2 uppercase tracking-widest text-[#fff] hover:bg-frontier-indigo hover:text-frontier-deep transition-all">Update Room Availability</button>
+            </div>
+        `, { className: 'custom-popup' });
+                mapLayers.hotspots.addLayer(marker);
+            });
+
+            // Render Alerts
+            COMMUNITY_DATA.alerts.forEach(a => {
+                const icon = a.type === 'traffic' ? 'traffic' : 'storm';
+                const marker = L.marker([a.lat, a.lon], {
+                    icon: L.divIcon({
+                        className: '',
+                        html: `<div class="w-8 h-8 rounded-full border-2 border-red-500 bg-red-500 animate-bounce flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+                    <span class="material-symbols-outlined text-white text-sm">warning</span>
+                </div>`,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    })
+                });
+                marker.bindPopup(`<div class="bg-red-950/90 border border-red-500 p-3 text-white">
+            <div class="text-[8px] font-bold uppercase mb-1 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Live ${a.type} Alert</div>
+            <div class="text-[10px] font-bold">${a.msg}</div>
+        </div>`, { className: 'custom-popup' });
+                mapLayers.alerts.addLayer(marker);
+            });
+
+            // Initial Toggles
+            mapLayers.users.addTo(mainMap);
+            mapLayers.hotspots.addTo(mainMap);
+            mapLayers.alerts.addTo(mainMap);
+        }
+
+        function toggleMapLayer(type) {
+            const btn = document.getElementById('btn-' + type);
+            if (!mainMap.hasLayer(mapLayers[type])) {
+                mainMap.addLayer(mapLayers[type]);
+                btn.classList.add('active');
+            } else {
+                mainMap.removeLayer(mapLayers[type]);
+                btn.classList.remove('active');
+            }
+        }
+
+        function renderThreads() {
+            const container = document.getElementById('threads-container');
+            if (!container) return;
+
+            container.innerHTML = COMMUNITY_DATA.threads.map(t => `
+        <div class="p-6 bg-frontier-navy/40 border border-frontier-indigo/5 hover:border-frontier-indigo/30 transition-all rounded-lg flex gap-5 group">
+            <div class="w-12 h-12 rounded-lg bg-frontier-indigo/10 flex-shrink-0 flex items-center justify-center border border-frontier-indigo/20">
+                <span class="material-symbols-outlined text-frontier-indigo">person_pin</span>
+            </div>
+            <div class="flex-1">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex flex-col">
+                        <span class="text-[11px] font-black text-white uppercase tracking-wider">${t.user}</span>
+                        <span class="text-[7px] text-frontier-lime font-bold uppercase tracking-widest">${t.rank} • ${t.trust} Reliable</span>
+                    </div>
+                    <span class="text-[8px] text-frontier-text uppercase">${t.time}</span>
+                </div>
+                <p class="text-[12px] text-frontier-text leading-relaxed tracking-wide uppercase italic">"${t.msg}"</p>
+                <div class="mt-4 flex gap-4 border-t border-frontier-indigo/5 pt-4">
+                    <button class="text-[9px] font-black text-frontier-indigo uppercase tracking-widest flex items-center gap-1 hover:text-frontier-lime transition-colors"><span class="material-symbols-outlined text-xs">chat</span> Send Frequency</button>
+                    <button class="text-[9px] font-black text-frontier-text uppercase tracking-widest flex items-center gap-1 hover:text-white transition-colors"><span class="material-symbols-outlined text-xs">share_location</span> Route to Intel</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+        }
+
+        function renderStories() {
+            const strip = document.getElementById('stories-strip');
+            if (!strip) return;
+            strip.innerHTML = COMMUNITY_DATA.stories.map(s => `
+        <div class="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group" onclick="viewStory('${s.id}')">
+            <div class="story-circle ring-offset-2 ring-offset-frontier-deep">
+                <img src="${s.img}" class="w-full h-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all">
+            </div>
+            <span class="text-[7px] font-bold text-frontier-indigo uppercase tracking-widest">${s.loc}</span>
+        </div>
+    `).join('');
+        }
+
+        function renderReputation() {
+            const list = document.getElementById('reputation-list');
+            if (!list) return;
+            list.innerHTML = COMMUNITY_DATA.ranking.map((r, i) => `
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-black text-frontier-indigo/40">#0${i + 1}</span>
+                <span class="text-[10px] font-black text-white uppercase">${r.user}</span>
+            </div>
+            <div class="text-[9px] text-frontier-lime font-black uppercase tracking-widest">${r.assists} Intelligence Assists</div>
+        </div>
+    `).join('');
+        }
+
+        // --- INTELLIGENCE HOOK: AI Context ---
+        // We overwrite queryAI to include a brief community context for smarter travel recommendations.
+        var originalQueryAI = queryAI;
+        queryAI = async function (prompt) {
+            const context = `
+        Current Local Intel:
+        - Active Threads: ${COMMUNITY_DATA.threads.slice(0, 2).map(t => t.msg).join(' ')}
+        - Hotspots: ${COMMUNITY_DATA.hotspots.map(h => `${h.name} (${h.availability})`).join(', ')}
+        - Alerts: ${COMMUNITY_DATA.alerts.map(a => a.msg).join(', ')}
+    `;
+            const enrichedPrompt = `Context: ${context}. Question: ${prompt}`;
+            // Try Gemini first WITH context
+            const geminiResponse = await queryGemini(enrichedPrompt);
+            if (geminiResponse && geminiResponse.length > 5) {
+                return geminiResponse;
+            }
+            // Fallback to offline database WITHOUT context
+            return getOfflineResponse(prompt);
+        };
+
+        function updateAvailability(hotelId) {
+            const h = COMMUNITY_DATA.hotspots.find(x => x.id === hotelId);
+            if (!h) return;
+            const newStatus = prompt(`Update status for ${h.name}:`, h.availability);
+            if (newStatus) {
+                h.availability = newStatus;
+                h.posts.unshift(`Update: ${newStatus}`);
+                addLog(`Intelligence update: ${h.name} is now ${newStatus}.`);
+                renderMapIntel();
+                // Simulate reputation gain
+                addLog("Reputation Points +10 for community intelligence contributing!");
+            }
+        }
+
+        function postTripThread() {
+            const msg = prompt("Broadcast your update to the region:");
+            if (msg) {
+                COMMUNITY_DATA.threads.unshift({
+                    user: "YOU (COMMANDER)",
+                    rank: "Elite Traveler",
+                    trust: "5.0★",
+                    msg: msg,
+                    time: "Just Now"
+                });
+                renderThreads();
+                addLog("Trip broadcast transmitted successfully.");
+            }
+        }
+
+        function postStory() {
+            addLog("Story capture mode active. Frame the moment and broadcast.");
+            const loc = prompt("Tag Location:");
+            if (loc) {
+                COMMUNITY_DATA.stories.unshift({
+                    id: Date.now(),
+                    loc: loc,
+                    user: "Commander",
+                    img: "https://i.pravatar.cc/150?u=commander"
+                });
+                renderStories();
+            }
+        }
+
+        function viewStory(id) {
+            const s = COMMUNITY_DATA.stories.find(x => x.id == id);
+            if (s) {
+                openModal(`Intel Briefing: ${s.loc}`, `<img src="${s.img}" class="w-full h-64 object-cover mb-4 grayscale"> <p class="text-xs uppercase">Uploaded by ${s.user} • Verified via GeoSync.</p>`);
+                addLog(`Viewing briefing from ${s.loc}... Accessing satellite image.`);
+            }
+        }
+
+        function viewIntel(id) {
+            addLog(`Accessing ${id} intelligence record... Authorization granted.`);
+            openModal("Community Intel", `Accessing specialized data for cluster: ${id}. Verified by travelers with 4.5+ trust scores.`);
+        }
+
+        // --- ELITE DASHBOARD ENGINE (Swipe/Tab Switching + Heatmap) ---
+        var heatmapLayer = null;
+
+        function switchDashView(target) {
+            // Switch tabs
+            document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-frontier-indigo');
+                btn.classList.add('text-frontier-text');
+            });
+            document.getElementById('tab-' + target).classList.add('tab-active', 'text-frontier-indigo');
+            document.getElementById('tab-' + target).classList.remove('text-frontier-text');
+
+            // Switch containers
+            document.querySelectorAll('.dashboard-view').forEach(v => v.classList.remove('view-active'));
+            document.getElementById('view-' + target).classList.add('view-active');
+
+            // Force map resize if switching to map
+            if (target === 'map' && mainMap) {
+                setTimeout(() => mainMap.invalidateSize(), 150);
+            }
+
+            // Add small feedback in console-style
+            const status = document.getElementById('map-status');
+            if (status) status.innerText = `Switched to ${target.toUpperCase()} stream`;
+        }
+
+        function initHeatmap() {
+            if (!mainMap || typeof L.heatLayer === 'undefined') return;
+            // Mock density data near current cluster (Shimla area)
+            const heatData = [
+                [31.1048, 77.1734, 0.9], // High density center
+                [31.1030, 77.1850, 0.4],
+                [31.1120, 77.1680, 0.6],
+                [31.1040, 77.1730, 0.85]
+            ];
+            heatmapLayer = L.heatLayer(heatData, {
+                radius: 40,
+                blur: 20,
+                maxZoom: 17,
+                gradient: { 0.4: '#a3a6ff', 0.65: '#ceee93', 1: '#ff3366' }
+            });
+        }
+
+        function toggleHeatmap() {
+            if (!heatmapLayer) initHeatmap();
+            const btn = document.getElementById('btn-heatmap');
+            if (mainMap.hasLayer(heatmapLayer)) {
+                mainMap.removeLayer(heatmapLayer);
+                btn.classList.remove('active');
+            } else {
+                heatmapLayer.addTo(mainMap);
+                btn.classList.add('active');
+                addLog("Activity heatmap activated. Visualizing population density.", false);
+            }
+        }
+
+        function spawnSignalBubble() {
+            const field = document.getElementById('map-signal-field');
+            if (!field) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'signal-ping';
+            const x = Math.random() * 80 + 10;
+            const y = Math.random() * 80 + 10;
+            bubble.style.left = x + '%';
+            bubble.style.top = y + '%';
+            bubble.style.width = '15px';
+            bubble.style.height = '15px';
+
+            field.appendChild(bubble);
+            setTimeout(() => bubble.remove(), 3000);
+        }
+
+        function quickQuery(text) {
+            document.getElementById('co-pilot-input').value = text;
+            navCommand();
+        }
+
+        function initCommunity() {
+            renderMapIntel();
+            renderThreads();
+            renderStories();
+            renderReputation();
+            // Start signal pulses
+            setInterval(spawnSignalBubble, 4000);
+        }
+        let hourlyForecastData = null;
+
+        async function initWeather() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    try {
+                        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode`);
+                        const data = await response.json();
+
+                        // Store hourly data for the interactive modal
+                        hourlyForecastData = data.hourly;
+
+                        const { temperature, weathercode } = data.current_weather;
+
+                        const tempEl = document.getElementById('weather-temp');
+                        if (tempEl) tempEl.innerText = `${Math.round(temperature)}°C`;
+
+                        // Simple weather code to icon mapping
+                        const weatherDesc = document.getElementById('weather-desc');
+                        const weatherIcon = document.getElementById('weather-icon');
+
+                        updateWeatherUI(weathercode, weatherIcon, weatherDesc);
+
+                        document.getElementById('weather-desc').innerText += " (Click for 12hr forecast)";
+
+                        // Add a small red dot to show the user's current physical location on the map
+                        if (typeof mainMap !== 'undefined' && mainMap) {
+                            const userDot = L.circleMarker([latitude, longitude], {
+                                color: '#ff3366',
+                                fillColor: '#ff3366',
+                                fillOpacity: 1,
+                                radius: 4,
+                                weight: 2
+                            }).addTo(mainMap);
+                            userDot.bindPopup('<div style="font-family:\'Space Grotesk\',sans-serif;font-size:10px;font-weight:bold;color:#ff3366;text-align:center;">Current Location</div>', { className: 'custom-popup' });
+                        }
+
+                    } catch (err) {
+                        console.error("Weather sync failed", err);
+                    }
+                });
+            }
+        }
+
+        function updateWeatherUI(code, iconEl, descEl) {
+            if (code <= 3) {
+                iconEl.innerText = "sunny";
+                if (descEl) descEl.innerText = "Clear skies and optimal traveling conditions in your area.";
+            } else if (code >= 61) {
+                iconEl.innerText = "rainy";
+                if (descEl) descEl.innerText = "Wet weather ahead. Proceed with caution and enjoy the vibe.";
+            } else {
+                iconEl.innerText = "cloudy";
+                if (descEl) descEl.innerText = "Partial cloud cover. Comfortable for outdoor exploration.";
+            }
+        }
+
+        function showWeatherForecast() {
+            if (!hourlyForecastData) {
+                openModal("Syncing Data", "We are still retrieving your live weather. Please allow location access and try again in a moment.");
+                return;
+            }
+
+            const now = new Date();
+            const currentHour = now.getHours();
+            const forecastGrid = document.getElementById('forecast-grid');
+            forecastGrid.innerHTML = ''; // Clear old
+
+            // Render next 12 hours as DOM elements
+            for (let i = 0; i < 12; i++) {
+                const hour = (currentHour + i) % 24;
+                const temp = Math.round(hourlyForecastData.temperature_2m[currentHour + i]);
+                const code = hourlyForecastData.weathercode[currentHour + i];
+
+                // Map WMO weather code to a readable label and icon
+                let icon = 'cloud';
+                let label = 'Cloudy';
+                if (code === 0) { icon = 'sunny'; label = 'Clear'; }
+                else if (code <= 2) { icon = 'partly_cloudy_day'; label = 'Mostly Clear'; }
+                else if (code === 3) { icon = 'cloud'; label = 'Overcast'; }
+                else if (code <= 48) { icon = 'foggy'; label = 'Fog'; }
+                else if (code <= 57) { icon = 'grain'; label = 'Drizzle'; }
+                else if (code <= 67) { icon = 'rainy'; label = 'Rain'; }
+                else if (code <= 77) { icon = 'ac_unit'; label = 'Snow'; }
+                else if (code <= 82) { icon = 'rainy'; label = 'Showers'; }
+                else if (code <= 99) { icon = 'thunderstorm'; label = 'Thunder'; }
+
+                const isNow = i === 0;
+                const card = document.createElement('div');
+                card.className = `flex flex-col items-center p-3 rounded border ${isNow
+                        ? 'border-frontier-lime bg-frontier-lime/10'
+                        : 'border-frontier-indigo/20 bg-frontier-deep/60'
+                    } transition-all hover:border-frontier-lime/50`;
+                card.innerHTML = `
+            <span class="text-[9px] font-bold tracking-widest mb-2 ${isNow ? 'text-frontier-lime' : 'text-frontier-indigo/60'}">${isNow ? 'NOW' : String(hour).padStart(2, '0') + ':00'}</span>
+            <span class="material-symbols-outlined text-2xl mb-1 ${isNow ? 'text-frontier-lime' : 'text-frontier-text'}" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+            <span class="text-sm font-black text-white">${temp}&deg;</span>
+            <span class="text-[8px] text-frontier-text mt-1 tracking-wide">${label}</span>
+        `;
+                forecastGrid.appendChild(card);
+            }
+
+            // Open the dedicated weather modal
+            const modal = document.getElementById('weather-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('weather-modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeWeatherModal() {
+            const modal = document.getElementById('weather-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('weather-modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function scrollToMap() {
+            // Switch to the map tab in the dashboard
+            if (typeof switchDashView === 'function') {
+                switchDashView('map');
+            }
+
+            // Scroll the entire dashboard section into view
+            const dashboard = document.getElementById('dashboard-section');
+            if (dashboard) {
+                dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // --- NEW INTELLIGENCE LAYER: AI MAP NAVIGATION ---
+        let mainMap;
+        function initMap() {
+            mainMap = L.map('map', {
+                center: [20, 0],
+                zoom: 2,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mainMap);
+
+            // Add custom zoom control at bottom right
+            L.control.zoom({ position: 'bottomright' }).addTo(mainMap);
+        }
+
+        // --- ROUTE PLANNER ENGINE ---
+        let currentRouteMode = 'driving';
+        let currentRouteLine = null;
+        let routeStartMarker = null;
+        let routeEndMarker = null;
+
+        function setRouteMode(mode) {
+            currentRouteMode = mode;
+            document.querySelectorAll('.route-mode-btn').forEach(btn => {
+                btn.className = btn.className
+                    .replace('border-frontier-lime text-frontier-lime bg-frontier-lime/10', '')
+                    + ' border-frontier-indigo/30 text-frontier-indigo';
+            });
+            const active = document.getElementById('mode-' + mode);
+            if (active) {
+                active.className = active.className
+                    .replace('border-frontier-indigo/30 text-frontier-indigo', '')
+                    + ' border-frontier-lime text-frontier-lime bg-frontier-lime/10';
+            }
+        }
+
+        function useMyLocationForRoute() {
+            if (userLocationMarker) {
+                const latlng = userLocationMarker.getLatLng();
+                // Reverse geocode to get address
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('route-from').value = data.display_name ? data.display_name.split(',').slice(0, 3).join(',') : `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+                    })
+                    .catch(() => {
+                        document.getElementById('route-from').value = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+                    });
+            } else {
+                if (!navigator.geolocation) return;
+                navigator.geolocation.getCurrentPosition(pos => {
+                    document.getElementById('route-from').value = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+                });
+            }
+        }
+
+        async function geocodePlace(query) {
+            // Check if it's already lat,lon
+            const coordMatch = query.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+            if (coordMatch) return { lat: parseFloat(coordMatch[1]), lon: parseFloat(coordMatch[2]) };
+
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (!data || data.length === 0) throw new Error(`Could not find: "${query}"`);
+            return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+        }
+
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m} min`;
+        }
+
+        function formatDistance(meters) {
+            if (meters >= 1000) return (meters / 1000).toFixed(1) + ' km';
+            return Math.round(meters) + ' m';
+        }
+
+        async function calculateRoute() {
+            const fromInput = document.getElementById('route-from').value.trim();
+            const toInput = document.getElementById('route-to').value.trim();
+            const loading = document.getElementById('route-loading');
+            const results = document.getElementById('route-results');
+            const errorEl = document.getElementById('route-error');
+
+            if (!fromInput || !toInput) {
+                errorEl.textContent = 'Please fill in both From and To fields.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            results.classList.add('hidden');
+            errorEl.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            try {
+                // Geocode both locations
+                const [from, to] = await Promise.all([geocodePlace(fromInput), geocodePlace(toInput)]);
+
+                // OSRM routing (free, no key)
+                // Map our mode to OSRM profile
+                const osrmProfile = currentRouteMode === 'cycling' ? 'bike' : currentRouteMode === 'walking' ? 'foot' : 'car';
+                const osrmUrl = `https://router.project-osrm.org/route/v1/${osrmProfile}/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&steps=true`;
+
+                const res = await fetch(osrmUrl);
+                const data = await res.json();
+
+                if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+                    throw new Error('No route found between these locations.');
+                }
+
+                const route = data.routes[0];
+                const coords = route.geometry.coordinates; // [lon, lat] pairs
+
+                // Update stats
+                document.getElementById('route-distance').textContent = formatDistance(route.distance);
+                document.getElementById('route-time').textContent = formatDuration(route.duration);
+
+                // Extract steps
+                const steps = route.legs.flatMap(leg => leg.steps).filter(s => s.maneuver.type !== 'arrive' && s.name);
+                document.getElementById('route-steps').textContent = steps.length;
+
+                // Render turn-by-turn maneuvers
+                const stepsList = document.getElementById('route-steps-list');
+                stepsList.innerHTML = steps.map((s, i) => `
+            <div class="text-[10px] text-frontier-text flex items-start gap-2 py-2 border-b border-frontier-indigo/5 hover:bg-frontier-indigo/5 transition-colors group">
+                <span class="text-frontier-lime font-black flex-shrink-0 w-4">${i + 1}.</span>
+                <span class="leading-relaxed">
+                    <span class="text-white font-bold group-hover:text-frontier-lime transition-all capitalize">${s.maneuver.type === 'turn' ? (s.maneuver.modifier || '') + ' onto ' : ''}${s.name || 'Continue Path'}</span>
+                    <span class="text-frontier-indigo/50"> (${formatDistance(s.distance)})</span>
+                </span>
+            </div>
+        `).join('');
+
+                // Draw route on Leaflet map
+                if (currentRouteLine) mainMap.removeLayer(currentRouteLine);
+                if (routeStartMarker) mainMap.removeLayer(routeStartMarker);
+                if (routeEndMarker) mainMap.removeLayer(routeEndMarker);
+
+                // Convert OSRM [lon,lat] to Leaflet [lat,lon]
+                const latLngs = coords.map(c => [c[1], c[0]]);
+
+                currentRouteLine = L.polyline(latLngs, {
+                    color: '#ceee93',
+                    weight: 5,
+                    opacity: 0.85,
+                    lineJoin: 'round'
+                }).addTo(mainMap);
+
+                // Start marker (green dot)
+                routeStartMarker = L.marker([from.lat, from.lon], {
+                    icon: L.divIcon({
+                        className: '',
+                        html: `<div style="width:14px;height:14px;background:#ceee93;border:2px solid #070d1f;border-radius:50%;box-shadow:0 0 8px rgba(206,238,147,0.8);"></div>`,
+                        iconSize: [14, 14], iconAnchor: [7, 7]
+                    })
+                }).bindPopup(`<div style="font-family:'Space Grotesk',sans-serif;font-size:11px;background:#11192e;color:#ceee93;padding:6px;">📍 Start: ${fromInput.split(',')[0]}</div>`).addTo(mainMap);
+
+                // End marker (indigo dot)
+                routeEndMarker = L.marker([to.lat, to.lon], {
+                    icon: L.divIcon({
+                        className: '',
+                        html: `<div style="width:14px;height:14px;background:#a3a6ff;border:2px solid #070d1f;border-radius:50%;box-shadow:0 0 8px rgba(163,166,255,0.8);"></div>`,
+                        iconSize: [14, 14], iconAnchor: [7, 7]
+                    })
+                }).bindPopup(`<div style="font-family:'Space Grotesk',sans-serif;font-size:11px;background:#11192e;color:#a3a6ff;padding:6px;">🏁 Destination: ${toInput.split(',')[0]}</div>`).addTo(mainMap);
+
+                // Fit map to route
+                mainMap.fitBounds(currentRouteLine.getBounds(), { padding: [60, 60], animate: true, duration: 1.5 });
+
+                results.classList.remove('hidden');
+                loading.classList.add('hidden');
+
+                // Scroll to map after short delay
+                setTimeout(() => scrollToMap(), 500);
+
+            } catch (err) {
+                loading.classList.add('hidden');
+                errorEl.textContent = 'Error: ' + err.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        let currentHotelSort = 'asc'; // 'asc' = Low-High, 'desc' = High-Low
+        
+        function toggleHotelSort() {
+            currentHotelSort = currentHotelSort === 'asc' ? 'desc' : 'asc';
+            const btn = document.getElementById('stay-sort-btn');
+            btn.innerHTML = `<span class="material-symbols-outlined text-sm">swap_vert</span> Price: ${currentHotelSort === 'asc' ? 'Low' : 'High'}`;
+            searchStays(); // Re-trigger search with new sort
+        }
+
+        async function searchStays() {
+            const queryInput = document.getElementById('stay-search-input');
+            const query = queryInput.value.trim();
+            const grid = document.getElementById('stay-results-grid');
+            
+            if (!query) {
+                queryInput.focus();
+                return;
+            }
+
+            // Show real tracking state
+            grid.innerHTML = `
+                <div class="col-span-2 flex flex-col items-center justify-center py-12 text-frontier-indigo/60 animate-pulse">
+                    <span class="text-[9px] uppercase tracking-[0.3em] mb-2">Pinging Global Node Database...</span>
+                    <span class="text-[7px] text-white/30 uppercase">OpenStreetMap Intelligence Feed [Active]</span>
+                </div>
+            `;
+
+            let results = [];
+
+            try {
+                // 1. Geocode location via Nominatim
+                const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+                const geoRes = await fetch(geocodeUrl, { headers: { 'User-Agent': 'Zentryx-Travel-App' } });
+                
+                if (geoRes.ok) {
+                    const geoData = await geoRes.json();
+                    if (geoData && geoData.length > 0) {
+                        const { lat, lon } = geoData[0];
+                        
+                        // 2. Query Overpass (with safety check for response type)
+                        const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json][timeout:20];(node["tourism"~"hotel|hostel|guest_house|motel|apartment|resort"](around:8000,${lat},${lon});way["tourism"~"hotel|hostel|guest_house|motel|apartment|resort"](around:8000,${lat},${lon}););out body;>;out skel qt;`;
+                        const overpassRes = await fetch(overpassUrl);
+                        
+                        if (overpassRes.ok && overpassRes.headers.get('content-type')?.includes('json')) {
+                            const overpassData = await overpassRes.json();
+                            if (overpassData.elements) {
+                                overpassData.elements.forEach(el => {
+                                    if (el.tags && el.tags.name) {
+                                        const rating = el.tags.stars || (Math.random() * 4 + 1).toFixed(1); 
+                                        const basePrice = el.tags.tourism === 'hostel' ? 500 : 1500;
+                                        const priceVal = Math.floor(Math.random() * 10000 + basePrice);
+                                        results.push({
+                                            name: el.tags.name,
+                                            price: `${priceVal.toLocaleString()} INR`,
+                                            priceVal: priceVal,
+                                            rating: rating,
+                                            status: Math.random() > 0.7 ? "Limited Space" : "Immediate Entry",
+                                            img: `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1566073771259-6a8506099945' : '1551882547-ff43c69e5cf2'}?w=400&sig=${el.id}`,
+                                            address: el.tags['addr:street'] || el.tags['addr:place'] || 'Regional Sector'
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("Global node telemetry failed, falling back to local dataset.", err);
+            }
+
+            // 3. Fallback to internal curated database if OSM data is empty or fetch failed
+            if (results.length === 0) {
+                const lowerQuery = query.toLowerCase();
+                for (const city in TRAVEL_DB.hotels) {
+                    if (city.toLowerCase().includes(lowerQuery) || lowerQuery.includes(city.toLowerCase())) {
+                        results.push(...TRAVEL_DB.hotels[city]);
+                    }
+                }
+            }
+
+            // 4. Render Final Results
+            if (results.length === 0) {
+                 grid.innerHTML = `
+                    <div class="col-span-2 flex flex-col items-center justify-center py-12 text-frontier-indigo/30 space-y-2">
+                        <span class="text-[10px] font-bold uppercase">Sector Empty</span>
+                        <span class="text-[8px] uppercase tracking-widest">No hospitality nodes detected near ${query}</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // Apply user-defined Sorting
+            results.sort((a, b) => {
+                return currentHotelSort === 'asc' ? a.priceVal - b.priceVal : b.priceVal - a.priceVal;
+            });
+
+            grid.innerHTML = results.map(hotel => `
+                <div class="glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo group cursor-pointer transition-all p-3" onclick="openModal('Entity Reservation', 'Ready to secure a node at <b>${hotel.name}</b>?<br><br>Price: ${hotel.price}<br>Rating: ${hotel.rating} ★<br><br><button class=\'w-full bg-frontier-indigo text-white py-2 text-[10px] font-black uppercase hover:brightness-110\'>Transmit Booking Signal</button>')">
+                    <div class="h-28 relative overflow-hidden mb-3">
+                        <img src="${hotel.img}" class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 group-hover:brightness-100 transition-all duration-700" alt="${hotel.name}">
+                        <div class="absolute top-2 right-2 bg-frontier-deep/90 backdrop-blur px-2 py-1 text-[8px] font-bold ${hotel.rating >= 4 ? 'text-frontier-lime' : 'text-frontier-indigo'} border border-frontier-indigo/30">${hotel.rating} ★</div>
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-white text-[11px] font-black uppercase truncate leading-none">${hotel.name}</h4>
+                        <p class="text-[8px] text-frontier-text uppercase tracking-widest truncate opacity-50">${hotel.address}</p>
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="text-[10px] text-frontier-indigo font-black">${hotel.price}</span>
+                            <span class="text-[7px] uppercase tracking-tighter ${hotel.status.includes('Entry') ? 'text-frontier-lime' : 'text-red-400'}">${hotel.status}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addLog(text, isAI = true) {
+            const log = document.getElementById('co-pilot-log');
+            const div = document.createElement('div');
+            div.className = isAI ? "text-frontier-indigo" : "text-white/60";
+            div.innerHTML = `<span class="text-frontier-lime font-bold">${isAI ? '>' : ''}</span> ${text}`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        let currentMarker = null;   // For search/destination markers
+        let userLocationMarker = null; // For live user location — never removed by search
+        let locationWatcher = null;    // watchPosition ID for continuous tracking
+
+        function getBearingLabel(lat, lon) {
+            // Calculate bearing from world center (0,0) to this point
+            const dLat = lat;
+            const dLon = lon;
+            const angle = Math.atan2(dLon, dLat) * 180 / Math.PI;
+            const normalized = (angle + 360) % 360;
+            const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            return dirs[Math.round(normalized / 22.5) % 16] + ` (${Math.round(normalized)}°)`;
+        }
+
+        function showCoordinates(lat, lon, name) {
+            const display = document.getElementById('coord-display');
+            display.classList.remove('hidden');
+            document.getElementById('coord-lat').innerText = parseFloat(lat).toFixed(6) + '° ' + (lat >= 0 ? 'N' : 'S');
+            document.getElementById('coord-lon').innerText = parseFloat(lon).toFixed(6) + '° ' + (lon >= 0 ? 'E' : 'W');
+            document.getElementById('coord-name').innerText = name;
+            document.getElementById('coord-bearing').innerText = getBearingLabel(parseFloat(lat), parseFloat(lon));
+        }
+
+        async function navCommand() {
+            const input = document.getElementById('co-pilot-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            addLog(query, false);
+            input.value = '';
+            addLog('Searching for: ' + query + '...');
+            document.getElementById('map-status').innerText = 'Searching...';
+
+            try {
+                // Use addressdetails=1 for full address breakdown
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const { lat, lon, display_name } = data[0];
+                    const latF = parseFloat(lat);
+                    const lonF = parseFloat(lon);
+
+                    addLog(`Found: ${display_name.substring(0, 60)}...`);
+                    addLog(`Lat: ${latF.toFixed(6)}° ${latF >= 0 ? 'N' : 'S'} | Lon: ${lonF.toFixed(6)}° ${lonF >= 0 ? 'E' : 'W'}`);
+
+                    // Remove old SEARCH marker only (never touches user location dot)
+                    if (currentMarker) mainMap.removeLayer(currentMarker);
+
+                    // Fly to location at street/landmark level zoom
+                    mainMap.flyTo([latF, lonF], 15, { animate: true, duration: 2.5 });
+
+                    // Add permanent styled marker with popup
+                    currentMarker = L.marker([latF, lonF], {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `<div style="width:16px;height:16px;background:#ceee93;border:2px solid #a3a6ff;border-radius:50%;box-shadow:0 0 12px rgba(206,238,147,0.8);"></div>`,
+                            iconAnchor: [8, 8]
+                        })
+                    }).addTo(mainMap);
+
+                    currentMarker.bindPopup(`
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;background:#11192e;color:#a3a6ff;padding:8px;border:1px solid rgba(163,166,255,0.3);border-radius:4px;min-width:160px;">
+                    <div style="color:#ceee93;font-weight:bold;margin-bottom:4px;">${display_name.split(',')[0]}</div>
+                    <div style="color:#a5aac2;font-size:9px;">${display_name.split(',').slice(1, 3).join(',').trim()}</div>
+                    <hr style="border-color:rgba(163,166,255,0.15);margin:6px 0;"/>
+                    <div style="color:#ceee93;">${latF.toFixed(5)}° ${latF >= 0 ? 'N' : 'S'}</div>
+                    <div style="color:#ceee93;">${lonF.toFixed(5)}° ${lonF >= 0 ? 'E' : 'W'}</div>
+                </div>
+            `, { className: 'custom-popup' }).openPopup();
+
+                    // Update coordinate panel
+                    showCoordinates(lat, lon, display_name.substring(0, 80));
+                    document.getElementById('map-status').innerText = display_name.split(',')[0];
+
+                } else {
+                    addLog('Address not found. Try being more specific (e.g. "Eiffel Tower, Paris" or "1 Infinite Loop, Cupertino").');
+                    document.getElementById('map-status').innerText = 'Address not found';
+                }
+            } catch (err) {
+                addLog('Connection error. Please check your internet and try again.');
+                document.getElementById('map-status').innerText = 'Error';
+            }
+        }
+
+        function useMyLocation() {
+            if (!navigator.geolocation) {
+                addLog('Geolocation is not supported by your browser.');
+                return;
+            }
+            addLog('Detecting your current position...');
+            document.getElementById('map-status').innerText = 'Locating...';
+
+            // Stop any previous watcher
+            if (locationWatcher !== null) {
+                navigator.geolocation.clearWatch(locationWatcher);
+            }
+
+            // Use watchPosition so the dot updates continuously and never disappears
+            locationWatcher = navigator.geolocation.watchPosition(
+                (position) => {
+                    const { latitude: lat, longitude: lon } = position.coords;
+
+                    // Remove and re-add user location dot (keeps it on top and accurate)
+                    if (userLocationMarker) mainMap.removeLayer(userLocationMarker);
+
+                    userLocationMarker = L.marker([lat, lon], {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `<div style="
+                        width:16px;height:16px;
+                        background:#e53e3e;
+                        border:3px solid #fff;
+                        border-radius:50%;
+                        box-shadow:0 0 0 4px rgba(229,62,62,0.35), 0 0 12px rgba(229,62,62,0.6);
+                        position:relative;
+                        z-index:9999;
+                    "></div>`,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        }),
+                        zIndexOffset: 9999  // Always on top
+                    }).addTo(mainMap);
+
+                    userLocationMarker.bindPopup(`
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;background:#11192e;color:#a3a6ff;padding:8px;border:1px solid rgba(163,166,255,0.3);border-radius:4px;">
+                    <div style="color:#e53e3e;font-weight:bold;margin-bottom:4px;">📍 You are here</div>
+                    <div style="color:#ceee93;">${lat.toFixed(5)}° ${lat >= 0 ? 'N' : 'S'}</div>
+                    <div style="color:#ceee93;">${lon.toFixed(5)}° ${lon >= 0 ? 'E' : 'W'}</div>
+                </div>
+            `, { className: 'custom-popup' });
+
+                    showCoordinates(lat, lon, 'Your current location');
+                    addLog(`Live location: ${lat.toFixed(5)}° | ${lon.toFixed(5)}°`);
+                    document.getElementById('map-status').innerText = 'Live Tracking';
+
+                    // Show the snap button now that we have a location
+                    const snapBtn = document.getElementById('snap-btn');
+                    if (snapBtn) snapBtn.classList.remove('hidden');
+
+                    // Only fly to location on the FIRST fix
+                    if (!window._locationInitialized) {
+                        window._locationInitialized = true;
+                        mainMap.flyTo([lat, lon], 15, { animate: true, duration: 2.5 });
+                    }
+                },
+                (err) => {
+                    addLog('Location access denied. Please enable location in your browser.');
+                },
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+            );
+        }
+
+        function snapToMe() {
+            if (!userLocationMarker) {
+                addLog('No live location yet. Click "Use My Location" first.');
+                return;
+            }
+            const latlng = userLocationMarker.getLatLng();
+            mainMap.flyTo(latlng, mainMap.getZoom() < 13 ? 15 : mainMap.getZoom(), { animate: true, duration: 1.2 });
+            addLog(`Snapped back to your location: ${latlng.lat.toFixed(5)}° | ${latlng.lng.toFixed(5)}°`);
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                if (document.activeElement.id === 'chat-input') sendMessage();
+                if (document.activeElement.id === 'co-pilot-input') navCommand();
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const chatMessages = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = "flex gap-3 " + (sender === 'user' ? "flex-row-reverse" : "");
+
+            let iconHTML = '';
+            if (sender === 'user') {
+                iconHTML = `<div class="w-6 h-6 rounded border border-frontier-indigo/50 flex-shrink-0 opacity-80 overflow-hidden"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ALzx01r-awRGOh7Dsk-AcsxbAfyhkqvV9r6NX4ha6YT6myF_FNHcqcqtsOTTDnEExCuYsI6vU6JzT8MqjQJrzsnUHuQY_Ysk42SvP0ZK4AkFSYXoVDMLVGa2gm1slf0mv6R3SVO4JoOlfj8tk73XmTZ4oOJjMZu9a4oTH4LQwkjh4peFxcfOtRAPPZhxfGCSEA2RUQqGvpP91S0b1M0HjSnGQRETZx2ez3GYq8RaEyYMc4ZyTGT9IKHB_8d2FrvioVC01p5PVxxx" class="w-full h-full object-cover"/></div>`;
+            } else {
+                iconHTML = `<span class="material-symbols-outlined text-frontier-lime mt-1 text-lg flex-shrink-0 backdrop-blur-md">smart_toy</span>`;
+            }
+
+            const bubbleClass = sender === 'user'
+                ? "bg-frontier-indigo/20 border border-frontier-indigo/40 p-3 text-white w-full border-r-2 border-r-frontier-indigo"
+                : "bg-[#11192e]/80 border border-frontier-lime/20 shadow-lg p-3 text-frontier-lime font-bold border-l-2 border-l-frontier-lime";
+
+            msgDiv.innerHTML = `
+        ${iconHTML}
+        <div class="${bubbleClass}">
+            <p class="text-[13px] leading-relaxed">${text}</p>
+        </div>
+    `;
+
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+            input.value = '';
+
+            if (text.toLowerCase().includes('@ai')) {
+                const typingId = 'typing-' + Date.now();
+                const chatMessages = document.getElementById('chat-messages');
+                const typingDiv = document.createElement('div');
+                typingDiv.id = typingId;
+                typingDiv.className = "flex gap-2 text-frontier-lime/50 text-[10px] uppercase font-bold tracking-[0.2em] animate-pulse ml-9";
+                typingDiv.innerHTML = "Processing data layer...";
+                chatMessages.appendChild(typingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                try {
+                    const lowerText = text.toLowerCase();
+                    const mathMatch = lowerText.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/])\s*(\d+(?:\.\d+)?)/);
+
+                    let finalResponse = "";
+
+                    // Fast lane for simple offline math (Arithmetic + Simple Functions)
+                    const mathShortcuts = {
+                        'log': (n) => Math.log10(n),
+                        'ln': (n) => Math.log(n),
+                        'sin': (n) => Math.sin(n * Math.PI / 180),
+                        'cos': (n) => Math.cos(n * Math.PI / 180),
+                        'tan': (n) => Math.tan(n * Math.PI / 180),
+                        'sqrt': (n) => Math.sqrt(n)
+                    };
+
+                    const funcMatch = lowerText.match(/(log|ln|sin|cos|tan|sqrt)\s*\(?(\d+(?:\.\d+)?)\)?/i);
+
+                    if (mathMatch) {
+                        const num1 = parseFloat(mathMatch[1]);
+                        const operator = mathMatch[2];
+                        const num2 = parseFloat(mathMatch[3]);
+                        let result = 0;
+                        if (operator === '+') result = num1 + num2;
+                        if (operator === '-') result = num1 - num2;
+                        if (operator === '*') result = num1 * num2;
+                        if (operator === '/') result = num1 / num2;
+                        finalResponse = `CALCULATION: ${num1} ${operator} ${num2} = ${result}`;
+                    } else if (funcMatch) {
+                        const func = funcMatch[1].toLowerCase();
+                        const num = parseFloat(funcMatch[2]);
+                        const result = mathShortcuts[func](num);
+                        finalResponse = `CALCULATION: ${func}(${num}) = ${result.toFixed(4)}`;
+                    } else {
+                        const extractedPrompt = text.replace(/@ai/ig, '').trim();
+                        finalResponse = await queryAI(extractedPrompt);
+                    }
+
+                    const el = document.getElementById(typingId);
+                    if (el) el.remove();
+
+                    appendMessage(finalResponse, 'ai');
+
+                } catch (err) {
+                    const el = document.getElementById(typingId);
+                    if (el) el.remove();
+                    appendMessage("Communication error: Unable to retrieve intelligence.", "ai");
+                }
+            }
+        }
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. DYNAMICALLY ADD CLASSES ACROSS THE PAGE
+
+            // Make Features Grid columns slide and reveal with delays (Removed sticky as it caused overlaps)
+            const bentoGrid = document.querySelector('.grid.md\\:grid-cols-3');
+            if (bentoGrid) {
+                bentoGrid.classList.add('items-start', 'relative');
+
+                if (bentoGrid.children[0]) {
+                    bentoGrid.children[0].classList.add('scroll-slide-left');
+                    bentoGrid.children[0].style.transitionDelay = "0ms";
+                }
+                if (bentoGrid.children[1]) {
+                    bentoGrid.children[1].classList.add('scroll-slide-right');
+                    bentoGrid.children[1].style.transitionDelay = "150ms";
+                }
+                if (bentoGrid.children[2]) {
+                    bentoGrid.children[2].classList.add('scroll-reveal');
+                    bentoGrid.children[2].style.transitionDelay = "300ms";
+                }
+            }
+
+            // Add animation classes to headers, paragraphs, and buttons
+            document.querySelectorAll('h2, h3, p.tracking-wide').forEach((el, index) => {
+                el.classList.add('scroll-reveal');
+                el.style.transitionDelay = `${(index % 3) * 100}ms`; // Staggered delays
+            });
+
+            document.querySelectorAll('button').forEach((el, index) => {
+                if (!el.classList.contains('scroll-reveal')) {
+                    el.classList.add('scroll-scale-up');
+                    el.style.transitionDelay = `${(index % 2) * 150}ms`;
+                }
+            });
+
+            // 2. Intersection Observer (More sensitive)
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, { threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
+
+            document.querySelectorAll('.scroll-reveal, .scroll-slide-left, .scroll-slide-right, .scroll-scale-up').forEach(el => {
+                observer.observe(el);
+            });
+
+            // 2.5 INITIALIZE INTELLIGENCE LAYERS
+            initWeather();
+            initMap();
+            initCommunity();
+
+            // 3. BUTTERY SMOOTH LERP SCROLL PHYSICS
+            // We use requestAnimationFrame and a linear interpolation (lerp) function
+            // to make the scroll effects feel like native app animations.
+            let currentScrollY = 0;
+            let targetScrollY = window.scrollY;
+
+            const lerp = (start, end, factor) => start + (end - start) * factor;
+
+            const heroImageNodes = document.querySelectorAll('section:nth-of-type(1) img');
+            const heroGroup = document.querySelector('section:nth-of-type(1) .z-10');
+            const spinners = document.querySelectorAll('.grid .relative.w-full.h-full > div.rounded-full');
+            const navbar = document.querySelector('nav');
+
+            // Reset Hero Images to initial scale to allow for parallax zooming
+            if (heroImageNodes) {
+                heroImageNodes.forEach(img => {
+                    img.style.transformOrigin = "bottom center";
+                    img.style.willChange = "transform";
+                });
+            }
+
+            if (spinners) {
+                spinners.forEach(spin => {
+                    // Because they are in absolutely positioned containers, we apply rotation cleanly
+                    spin.style.willChange = "transform";
+                });
+            }
+
+            window.addEventListener('scroll', () => {
+                targetScrollY = window.scrollY;
+
+                // Navbar snappy change
+                if (navbar) {
+                    if (targetScrollY > 50) {
+                        navbar.classList.add('nav-scrolled');
+                    } else {
+                        navbar.classList.remove('nav-scrolled');
+                    }
+                }
+            });
+
+            const renderLoop = () => {
+                // Calculate the smoothed scroll position
+                currentScrollY = lerp(currentScrollY, targetScrollY, 0.08);
+
+                // Hero Image Parallax (Moving vertically + scaling down for a zoom-out effect)
+                if (heroImageNodes.length >= 3) {
+                    const scale1 = Math.max(1.3 - currentScrollY * 0.0005, 1.0);
+                    const scale2 = Math.max(1.2 - currentScrollY * 0.0003, 1.0);
+                    const scale3 = Math.max(1.4 - currentScrollY * 0.0006, 1.0);
+
+                    heroImageNodes[0].style.transform = `scale(${scale1}) translateY(${currentScrollY * 0.15}px)`;
+                    heroImageNodes[1].style.transform = `scale(${scale2}) translateY(${currentScrollY * 0.05}px)`;
+                    heroImageNodes[2].style.transform = `scale(${scale3}) translateY(${currentScrollY * 0.25}px)`;
+                }
+
+                // Parallax and fade for main hero title
+                if (heroGroup) {
+                    heroGroup.style.transform = `translateY(${currentScrollY * -0.3}px)`;
+                    heroGroup.style.opacity = Math.max(1 - currentScrollY / 500, 0);
+                }
+
+                // Coordinated Parallax for Bento Grid Cards
+                const bentoGridSect = document.getElementById('features-grid-section');
+                if (bentoGridSect) {
+                    const cards = bentoGridSect.querySelectorAll('.glass-frontier');
+                    cards.forEach((card, i) => {
+                        const speed = [0.05, 0.03, 0.08][i % 3];
+                        // Calculate relative scroll within the section's proximity
+                        const relativeScroll = currentScrollY - bentoGridSect.offsetTop + 400;
+                        if (card.classList.contains('is-visible')) {
+                            card.style.transform = `translateY(${relativeScroll * speed * -1}px)`;
+                        }
+                    });
+                }
+
+                // Smooth continuous rotation linked to scroll for UI Rings
+                if (spinners.length >= 2) {
+                    // Apply the spinning rotation on top of their positioning
+                    spinners[0].style.transform = `translate(-50%, -50%) rotate(${currentScrollY * 0.25}deg)`;
+                    spinners[1].style.transform = `translate(-50%, -50%) rotate(${currentScrollY * -0.35}deg)`;
+                }
+
+                requestAnimationFrame(renderLoop);
+            };
+
+            // Start the physics loop
+            renderLoop();
+        });
+    </script>
+</body>
+
+</html>
