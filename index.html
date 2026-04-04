@@ -1509,7 +1509,11 @@
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
                     console.error('Gemini API error:', errData);
-                    return null;
+                    let errStr = errData?.error?.message || "Unknown error";
+                    if (res.status === 400) {
+                        return `*Zentryx Core (Error)*: Your Gemini API key is invalid or incorrectly formatted. Please click the gear icon to delete it and paste a correct key.`;
+                    }
+                    return `*Zentryx Core (Error)*: Gemini API failed (${res.status}): ${errStr}`;
                 }
 
                 const data = await res.json();
