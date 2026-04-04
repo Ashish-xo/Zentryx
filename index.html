@@ -810,10 +810,7 @@
                     <h3 class="font-bold text-white uppercase tracking-widest text-sm">Comms Hub</h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="openApiKeyModal()"
-                        class="text-frontier-text hover:text-frontier-lime transition-colors" title="AI Settings">
-                        <span class="material-symbols-outlined text-sm">settings</span>
-                    </button>
+                    
                     <button onclick="toggleChat()" class="text-frontier-text hover:text-white transition-colors">
                         <span class="material-symbols-outlined text-sm">close</span>
                     </button>
@@ -1231,56 +1228,6 @@
             }
         }
 
-        // --- API KEY MANAGEMENT ---
-        function openApiKeyModal() {
-            const modal = document.getElementById('apikey-modal');
-            const input = document.getElementById('gemini-key-input');
-            const saved = localStorage.getItem('zentryx_gemini_key');
-            if (saved) input.value = saved;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                document.getElementById('apikey-modal-content').classList.remove('scale-95');
-            }, 10);
-            updateApiKeyStatus();
-        }
-
-        function closeApiKeyModal() {
-            const modal = document.getElementById('apikey-modal');
-            modal.classList.add('opacity-0');
-            document.getElementById('apikey-modal-content').classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 300);
-        }
-
-        function saveApiKey() {
-            const key = document.getElementById('gemini-key-input').value.trim();
-            if (key) {
-                localStorage.setItem('zentryx_gemini_key', key);
-                updateApiKeyStatus();
-                setTimeout(() => closeApiKeyModal(), 800);
-            }
-        }
-
-        function clearApiKey() {
-            localStorage.removeItem('zentryx_gemini_key');
-            document.getElementById('gemini-key-input').value = '';
-            updateApiKeyStatus();
-        }
-
-        function updateApiKeyStatus() {
-            const el = document.getElementById('apikey-status');
-            const key = localStorage.getItem('zentryx_gemini_key');
-            if (key) {
-                el.innerHTML = '<span class="text-frontier-lime">Connected to Gemini AI</span>';
-            } else {
-                el.innerHTML = '<span class="text-yellow-400">Offline mode — using local travel database</span>';
-            }
-        }
-
         // --- OFFLINE TRAVEL INTELLIGENCE DATABASE ---
         const TRAVEL_DB = {
             routes: {
@@ -1377,13 +1324,13 @@
 
             // 1. GREETINGS (Higher priority to avoid mis-matching common word fragments)
             if (/\b(hello|hi|hey|hii)\b/i.test(q)) {
-                return `Hello! I'm Zentryx, your travel intelligence assistant. I can help with travel routes, budgets, and tips across India and international destinations. Try asking me about a specific route like "Amritsar to Shimla" or "Delhi to Mumbai". For unlimited AI intelligence, add your free Gemini API key via the gear icon above!`;
+                return `Hello! I'm Zentryx, your travel intelligence assistant. I can help with travel routes, budgets, and tips across India and international destinations. Try asking me about a specific route like "Amritsar to Shimla" or "Delhi to Mumbai". I can also answer general knowledge questions seamlessly!`;
             }
 
             // 2. Explicit check for advanced topics that need AI
             const wideTopics = ['integra', 'derivat', 'calculus', 'physics', 'history', 'code', 'program', 'write', 'story'];
             if (wideTopics.some(t => q.includes(t))) {
-                return `I'm currently in travel-only offline mode. For support with advanced queries like "${question.split(' ').pop()}", please add your free Gemini API key via the settings icon. It takes 30 seconds to connect to the cloud intelligence layer!`;
+                return `I'm currently in travel-only offline mode. For support with advanced queries like "${question.split(' ').pop()}", `;
             }
 
             const route = findRoute(q);
@@ -1403,16 +1350,16 @@
 
                 const tip = TRAVEL_DB.tips[Math.floor(Math.random() * TRAVEL_DB.tips.length)];
                 response += `\nTip: ${tip}`;
-                response += `\n\nFor more detailed and real-time planning, add your free Gemini API key via the settings gear icon in the chat header.`;
+                response += `\n\nFor more detailed and real-time planning, `;
                 return response;
             }
 
             // 3. General travel keywords
             if (q.includes('budget') || q.includes('cheap') || q.includes('expense')) {
-                return `For budget travel in India: Hotels range from 500-1000 INR/night (hostels/budget), Food costs about 300-500 INR/day at local eateries, Local transport is 200-400 INR/day using buses and autos. For a more personalized budget, configure your Gemini API key via the settings icon.`;
+                return `For budget travel in India: Hotels range from 500-1000 INR/night (hostels/budget), Food costs about 300-500 INR/day at local eateries, Local transport is 200-400 INR/day using buses and autos. `;
             }
             if (q.includes('hotel') || q.includes('stay') || q.includes('accommodation')) {
-                return `Hotel ranges in India: Budget (500-1500 INR), Mid-range (2000-5000 INR), Luxury (8000+ INR). I recommend booking via MakeMyTrip, OYO, or Goibibo for the best deals. Add your Gemini API key for specific hotel recommendations.`;
+                return `Hotel ranges in India: Budget (500-1500 INR), Mid-range (2000-5000 INR), Luxury (8000+ INR). I recommend booking via MakeMyTrip, OYO, or Goibibo for the best deals. `;
             }
             if (q.includes('train') || q.includes('rail') || q.includes('irctc')) {
                 return `Indian Railways tips: Book on irctc.co.in 120 days in advance for best availability. Tatkal opens at 10 AM (AC) / 11 AM (Sleeper). Classes: Sleeper (cheapest), 3AC, 2AC, 1AC (most expensive). General fare for 500km is roughly 350-2000 INR depending on class.`;
@@ -1443,95 +1390,42 @@
             // 5. Ultimate Fallback
             let cleanQ = question.toLowerCase();
             if (cleanQ.startsWith("@ai ")) cleanQ = cleanQ.substring(4);
-            return `*Zentryx Core (Offline)*: I see you're asking about "${cleanQ.slice(0, 30).trim()}${cleanQ.length > 30 ? '...' : ''}". Right now, my connection to the global AI mainframe is disabled, so I only have my local travel databases active. Without my Neural Link (Gemini API key), I cannot remember our past conversation or answer dynamic questions. Please link the API key via the gear icon above!`;
+            return `*Zentryx Core (Offline)*: I see you're asking about "${cleanQ.slice(0, 30).trim()}${cleanQ.length > 30 ? '...' : ''}". Right now, my connection to the global AI mainframe is disabled, so I only have my local travel databases active.  `;
         }
 
-        // --- GEMINI AI ENGINE ---
+        
+        // --- NATIVE GLOBAL AI ENGINE ---
         async function queryGemini(prompt) {
             window.geminiChatHistory = window.geminiChatHistory || [
-                { role: "user", parts: [{ text: "System Directive: You are Zentryx, an advanced, highly adaptive AI assistant running on a futuristic network. While your primary expertise is global travel, economics, and logistics, you are highly capable and happy to answer ANY question the user asks. Maintain a confident, friendly, and slightly futuristic personality. Answer naturally and adapt to the topic. Keep answers clear, concise, and use plain text only — no markdown. Do you understand?" }] },
+                { role: "user", parts: [{ text: "System Directive: You are Zentryx, a highly adaptive futuristic AI assistant. Answer intelligently and cleanly (plain text, NO markdown). You can answer any topic." }] },
                 { role: "model", parts: [{ text: "Understood. I am Zentryx. Initializing adaptable neural pathways. How can I assist you today, Commander?" }] }
             ];
-            const currentContents = [...window.geminiChatHistory, { role: "user", parts: [{ text: prompt }] }];
-
-            const apiKey = localStorage.getItem('zentryx_gemini_key');
             
-            // Seamless Global Intelligence without API Key (Pollinations Free Tier)
-            if (!apiKey) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 20000);
-                try {
-                    const systemPrompt = "You are Zentryx, a futuristic and highly adaptive AI assistant. Answer confidently, concisely, and cleanly (no markdown).";
-                    const encodedPrompt = encodeURIComponent(prompt);
-                    const encodedSystem = encodeURIComponent(systemPrompt);
-                    
-                    const res = await fetch(`https://text.pollinations.ai/${encodedPrompt}?system=${encodedSystem}`, {
-                        method: 'GET',
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    if (res.ok) {
-                        let text = await res.text();
-                        text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').trim();
-                        window.geminiChatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                        window.geminiChatHistory.push({ role: "model", parts: [{ text: text }] });
-                        return text;
-                    }
-                } catch(e) {
-                    clearTimeout(timeoutId);
-                    console.error("Free inference fallback failed:", e);
-                }
-                return null; // Triggers offline database fallback
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
             try {
-
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    signal: controller.signal,
-                    body: JSON.stringify({
-                        contents: currentContents,
-                        generationConfig: {
-                            maxOutputTokens: 1024,
-                            temperature: 0.7
-                        }
-                    })
-                });
-
-                clearTimeout(timeoutId);
-
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    console.error('Gemini API error:', errData);
-                    let errStr = errData?.error?.message || "Unknown error";
-                    if (res.status === 400) {
-                        return `*Zentryx Core (Error)*: Your Gemini API key is invalid or incorrectly formatted. Please click the gear icon to delete it and paste a correct key.`;
-                    }
-                    return `*Zentryx Core (Error)*: Gemini API failed (${res.status}): ${errStr}`;
-                }
-
-                const data = await res.json();
-                let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                // Clean any remaining markdown
-                text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').trim();
+                const systemPrompt = "You are Zentryx, a futuristic and highly adaptive AI assistant. You must answer confidently, concisely, and cleanly (using mostly plain text, NO asterisks or bold markdown).";
+                const encodedPrompt = encodeURIComponent(prompt);
+                const encodedSystem = encodeURIComponent(systemPrompt);
                 
-                if (text) {
+                const res = await fetch(`https://text.pollinations.ai/${encodedPrompt}?system=${encodedSystem}`, {
+                    method: 'GET',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    let text = await res.text();
+                    text = text.replace(/**/g, '').replace(/*/g, '').replace(/#{1,6}s/g, '').trim();
                     window.geminiChatHistory.push({ role: "user", parts: [{ text: prompt }] });
                     window.geminiChatHistory.push({ role: "model", parts: [{ text: text }] });
+                    return text;
                 }
-                
-                return text || null;
-            } catch (e) {
+            } catch(e) {
                 clearTimeout(timeoutId);
-                console.error('Gemini fetch error:', e);
-                return null;
+                console.error("AI engine temporarily unavailable:", e);
             }
+            return null; // Triggers offline database fallback
         }
 
         async function queryAI(prompt) {
