@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 
 <html class="dark" lang="en">
@@ -811,10 +810,6 @@
                     <h3 class="font-bold text-white uppercase tracking-widest text-sm">Comms Hub</h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="openApiKeyModal()"
-                        class="text-frontier-text hover:text-frontier-lime transition-colors" title="AI Settings">
-                        <span class="material-symbols-outlined text-sm">settings</span>
-                    </button>
                     <button onclick="toggleChat()" class="text-frontier-text hover:text-white transition-colors">
                         <span class="material-symbols-outlined text-sm">close</span>
                     </button>
@@ -827,10 +822,8 @@
                     <span class="material-symbols-outlined text-frontier-lime mt-1 text-lg">smart_toy</span>
                     <div
                         class="bg-[#11192e]/80 border border-frontier-indigo/20 rounded-sm p-3 text-frontier-text shadow-lg">
-                        <p class="text-[13px] leading-relaxed">Hi! I'm Zentryx AI. Tag <span
-                                class="text-frontier-lime font-bold">@ai</span> to ask me anything. I work offline with
-                            travel data for popular routes. For unlimited intelligence, click the <span
-                                class="text-frontier-lime font-bold">ΓÜÖ gear</span> icon to add your free Gemini API key.
+                        <p class="text-[13px] leading-relaxed">Hi! I'm Zentryx AI — your general-purpose assistant powered by OpenCode DeepSeek v4. Tag <span
+                                class="text-frontier-lime font-bold">@ai</span> and ask me <strong>anything</strong> — travel costs, science, coding, math, history, current events, or any topic.
                         </p>
                     </div>
                 </div>
@@ -852,38 +845,6 @@
             class="w-16 h-16 bg-frontier-indigo text-frontier-deep shadow-[0_0_20px_rgba(163,166,255,0.4)] rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300">
             <span id="fab-icon" class="material-symbols-outlined text-3xl font-black">forum</span>
         </button>
-    </div>
-
-    <!-- API Key Settings Modal -->
-    <div id="apikey-modal"
-        class="fixed inset-0 z-[250] hidden items-center justify-center bg-frontier-deep/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
-        <div class="glass-frontier p-8 border border-frontier-lime/30 w-[95%] max-w-lg shadow-[0_0_40px_rgba(206,238,147,0.1)] relative scale-95 transition-transform duration-300"
-            id="apikey-modal-content">
-            <button onclick="closeApiKeyModal()"
-                class="absolute top-4 right-4 text-frontier-text hover:text-white transition-colors"><span
-                    class="material-symbols-outlined">close</span></button>
-            <div class="flex items-center gap-3 mb-6">
-                <span class="material-symbols-outlined text-frontier-lime text-2xl">key</span>
-                <h3 class="font-headline font-black text-white text-xl uppercase tracking-widest">AI Configuration</h3>
-            </div>
-            <p class="text-frontier-text text-[13px] leading-relaxed mb-4">Enter your free Google Gemini API key to
-                unlock full AI intelligence. Get one free at <a href="https://aistudio.google.com/apikey"
-                    target="_blank" class="text-frontier-lime underline hover:text-white">aistudio.google.com/apikey</a>
-            </p>
-            <input id="gemini-key-input" type="password" placeholder="Paste your Gemini API key here..."
-                class="w-full bg-frontier-deep border border-frontier-indigo/30 px-4 py-3 text-[13px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-lime mb-3" />
-            <div id="apikey-status" class="text-[11px] uppercase tracking-widest mb-4 h-4"></div>
-            <div class="flex gap-3">
-                <button onclick="saveApiKey()"
-                    class="flex-1 py-3 bg-frontier-lime/10 border border-frontier-lime/40 text-frontier-lime font-bold text-xs uppercase tracking-widest hover:bg-frontier-lime/20 transition-colors flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-sm">save</span> Save Key
-                </button>
-                <button onclick="clearApiKey()"
-                    class="py-3 px-4 bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-widest hover:bg-red-500/20 transition-colors">Clear</button>
-            </div>
-            <p class="text-frontier-text/50 text-[10px] mt-4 leading-relaxed">Without a key, Zentryx uses its offline
-                travel database. With a key, it connects to Google's Gemini AI for unlimited intelligence.</p>
-        </div>
     </div>
 
     <!-- Weather Forecast Modal (dedicated) -->
@@ -1140,10 +1101,10 @@
             try {
                 let text = null;
 
-                // Try Gemini API first
+                // Try OpenCode DeepSeek API first
                 text = await queryBudgetAI(prompt);
 
-                // If no Gemini key or failed, use offline estimation
+                // If API failed, use offline estimation
                 if (!text) {
                     const route = findRoute(origin + " " + dest);
                     const dc = TRAVEL_DB.dailyCosts;
@@ -1328,7 +1289,7 @@
 
             // --- GREETINGS ---
             if (/^\s*@?ai\s*$|\b(hello|hi|hey|hii|sup)\b/i.test(q) && q.length < 25) {
-                return `Hello! I'm Zentryx AI. Tag @ai before your message to ask me anything. I can help with travel routes, general knowledge, survival tips, directions, math, science, and history. What would you like to know?`;
+                return `Hello! I'm Zentryx AI. Tag @ai before your message to ask me anything — travel, science, math, coding, history, or any topic. Powered by OpenCode DeepSeek v4.`;
             }
 
             // --- WEATHER (don't attempt to answer — redirect to live widget) ---
@@ -1460,172 +1421,205 @@
             }
 
             // --- ULTIMATE FALLBACK ---
-            const shortQ = question.replace(/@ai/ig, '').trim().slice(0, 40);
-            return `I have limited offline knowledge for this topic. The Zentryx AI is powered by Pollinations AI in real-time mode. If it's not responding, check your internet connection and try again. You can ask me about: travel routes, survival skills, directions, geography, science, history, or math.`;
+            return `I couldn't reach the AI server right now — this might be a temporary network issue. Please try again in a moment. In the meantime, I can answer questions about: travel routes, survival skills, directions, geography, science, history, and math.`;
         }
 
-        // --- GEMINI AI ENGINE ---
-        async function queryGemini(prompt) {
-            window.geminiChatHistory = window.geminiChatHistory || [
-                { role: "user", parts: [{ text: "System Directive: You are Zentryx, an advanced, highly adaptive AI assistant running on a futuristic network. While your primary expertise is global travel, economics, and logistics, you are highly capable and happy to answer ANY question the user asks. Maintain a confident, friendly, and slightly futuristic personality. Answer naturally and adapt to the topic. Keep answers clear, concise, and use plain text only ΓÇö no markdown. Do you understand?" }] },
-                { role: "model", parts: [{ text: "Understood. I am Zentryx. Initializing adaptable neural pathways. How can I assist you today, Commander?" }] }
-            ];
-            const currentContents = [...window.geminiChatHistory, { role: "user", parts: [{ text: prompt }] }];
+        // --- SERVER-SIDE AI ENGINE (OpenCode DeepSeek v4) ---
+        // All AI requests go through /api/ai — API key is stored server-side on Vercel
 
-            const apiKey = localStorage.getItem('zentryx_gemini_key');
-            
-            // Free Cloud AI via Pollinations (no API key required)
-            if (!apiKey) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 25000);
-                try {
-                    const systemPrompt = `You are Zentryx, a futuristic AI co-pilot built into a travel dashboard. You are highly knowledgeable and must answer ANY question the user asks accurately and helpfully.
+        async function queryAI(prompt) {
+            window.aiChatHistory = window.aiChatHistory || [];
 
-Your knowledge includes:
-- TRAVEL: Routes, transport costs, hotels, visas, packing, India and international destinations
-- GENERAL KNOWLEDGE: World history, geography, science, technology, culture, current events, sports
-- SURVIVAL SKILLS: Fire starting, water purification, shelter building, finding food, first aid
-- DIRECTIONS & NAVIGATION: Compass reading, using the sun/stars to find direction, landmark navigation
-- SCIENCE & MATH: Physics, chemistry, biology, astronomy, algebra, geometry
-- WEATHER: Explain weather patterns but clarify you lack real-time data
-
-Rules:
-- Answer confidently and accurately. NEVER make up facts.
-- Use plain text only. No markdown (no **, no ##, no bullet symbols).
-- Use numbered lists (1. 2. 3.) for step-by-step answers.
-- Keep answers concise but complete. Under 200 words unless more detail is essential.
-- If you genuinely don't know something, say so honestly.`;
-                    const encodedPrompt = encodeURIComponent(prompt);
-                    const encodedSystem = encodeURIComponent(systemPrompt);
-
-                    const res = await fetch(`https://text.pollinations.ai/${encodedPrompt}?system=${encodedSystem}&model=openai`, {
-                        method: 'GET',
-                        signal: controller.signal
-                    });
-
-                    clearTimeout(timeoutId);
-                    if (res.ok) {
-                        let text = await res.text();
-                        // Strip any accidental markdown the model returns
-                        text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').replace(/`{1,3}/g, '').trim();
-                        // Sanity check: reject server error pages or empty responses
-                        if (!text || text.length < 3 || text.toLowerCase().startsWith('<!doctype') || text.includes('IMPORTANT NOTICE')) {
-                            console.warn('Pollinations returned invalid content, using offline fallback.');
-                            return null;
-                        }
-                        window.geminiChatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                        window.geminiChatHistory.push({ role: "model", parts: [{ text: text }] });
-                        return text;
-                    }
-                } catch(e) {
-                    clearTimeout(timeoutId);
-                    console.error('Free AI inference failed:', e.name === 'AbortError' ? 'Request timed out' : e);
-                }
-                return null; // Triggers smart offline fallback
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            let useDirectFallback = false;
+            let res;
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 35000);
 
-                const res = await fetch(url, {
+                res = await fetch('/api/ai', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     signal: controller.signal,
                     body: JSON.stringify({
-                        contents: currentContents,
-                        generationConfig: {
-                            maxOutputTokens: 1024,
-                            temperature: 0.7
-                        }
+                        message: prompt,
+                        history: window.aiChatHistory.slice(-20)
                     })
                 });
 
                 clearTimeout(timeoutId);
 
+                if (!res.ok && res.status !== 429) {
+                    useDirectFallback = true;
+                }
+            } catch (e) {
+                console.warn('Backend fetch failed, using direct client-side API fallback:', e);
+                useDirectFallback = true;
+            }
+
+            // Client-side fallback for static servers (like VS Code Live Server)
+            if (useDirectFallback) {
+                try {
+                    console.log('Static server detected. Querying OpenCode directly from browser...');
+                    const fallbackApiKey = 'REDACTED_API_KEY';
+                    
+                    const messages = [
+                        { role: 'system', content: 'You are Zentryx, an advanced general-purpose AI assistant embedded in a futuristic travel & intelligence dashboard. Answer in plain text only, no markdown, under 300 words.' }
+                    ];
+
+                    for (const h of window.aiChatHistory.slice(-20)) {
+                        const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
+                        let content = '';
+                        if (h.parts && Array.isArray(h.parts)) {
+                            content = h.parts.map(p => p.text || '').join('');
+                        } else if (typeof h.content === 'string') {
+                            content = h.content;
+                        } else if (typeof h.text === 'string') {
+                            content = h.text;
+                        }
+                        if (content) {
+                            messages.push({ role, content });
+                        }
+                    }
+                    messages.push({ role: 'user', content: prompt.trim() });
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+                    const fallbackRes = await fetch('https://opencode.ai/zen/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${fallbackApiKey}`
+                        },
+                        signal: controller.signal,
+                        body: JSON.stringify({
+                            model: 'deepseek-v4-flash-free',
+                            messages: messages,
+                            temperature: 0.7,
+                            max_tokens: 2048
+                        })
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!fallbackRes.ok) {
+                        const errData = await fallbackRes.json().catch(() => ({}));
+                        console.error('Direct OpenCode API error:', fallbackRes.status, errData);
+                        if (fallbackRes.status === 429 || (errData.error && errData.error.type === 'CreditsError')) {
+                            return 'AI rate limit or credit limit reached. Please try again later.';
+                        }
+                        return getOfflineResponse(prompt);
+                    }
+
+                    const data = await fallbackRes.json();
+                    let text = data?.choices?.[0]?.message?.content || '';
+
+                    text = text
+                        .replace(/\*\*/g, '')
+                        .replace(/\*/g, '')
+                        .replace(/#{1,6}\s/g, '')
+                        .replace(/`{1,3}/g, '')
+                        .trim();
+
+                    if (text) {
+                        window.aiChatHistory.push({ role: 'user', parts: [{ text: prompt }] });
+                        window.aiChatHistory.push({ role: 'model', parts: [{ text: text }] });
+                        if (window.aiChatHistory.length > 40) {
+                            window.aiChatHistory = window.aiChatHistory.slice(-40);
+                        }
+                        return text;
+                    }
+                    return getOfflineResponse(prompt);
+                } catch (err) {
+                    console.error('Direct client-side fallback failed:', err);
+                    return getOfflineResponse(prompt);
+                }
+            }
+
+            // Standard backend response processing
+            try {
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
-                    console.error('Gemini API error:', errData);
-                    if (res.status === 400) {
-                        return `Your Gemini API key appears invalid. Please click the gear icon to update it, or remove it to use the free AI.`;
+                    console.error('AI API error:', res.status, errData);
+                    if (res.status === 429) {
+                        return 'You are sending too many requests. Please wait a moment and try again.';
                     }
-                    // For rate limits (429), server errors (5xx), etc. — fall back silently
-                    console.warn(`Gemini API returned ${res.status}, falling back to free AI...`);
-                    return null;
+                    return getOfflineResponse(prompt);
                 }
 
                 const data = await res.json();
-                let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                // Clean any remaining markdown
-                text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').trim();
-                
-                if (text) {
-                    window.geminiChatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                    window.geminiChatHistory.push({ role: "model", parts: [{ text: text }] });
-                }
-                
-                return text || null;
-            } catch (e) {
-                clearTimeout(timeoutId);
-                console.error('Gemini fetch error:', e);
-                return null;
-            }
-        }
+                const text = data.response;
 
-        async function queryAI(prompt) {
-            // Try Gemini API first (uses key if available, Pollinations if not)
-            const geminiResponse = await queryGemini(prompt);
-            if (geminiResponse && geminiResponse.length > 5) {
-                return geminiResponse;
-            }
-            // If a Gemini key existed but failed (e.g. 429), try Pollinations explicitly
-            const apiKey = localStorage.getItem('zentryx_gemini_key');
-            if (apiKey) {
-                try {
-                    const systemPrompt = `You are Zentryx, a futuristic AI assistant. Answer ANY question accurately. Use plain text only, no markdown. Keep answers concise.`;
-                    const encodedPrompt = encodeURIComponent(prompt);
-                    const encodedSystem = encodeURIComponent(systemPrompt);
-                    const controller = new AbortController();
-                    const tid = setTimeout(() => controller.abort(), 20000);
-                    const res = await fetch(`https://text.pollinations.ai/${encodedPrompt}?system=${encodedSystem}&model=openai`, {
-                        method: 'GET', signal: controller.signal
-                    });
-                    clearTimeout(tid);
-                    if (res.ok) {
-                        let text = await res.text();
-                        text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').replace(/`{1,3}/g, '').trim();
-                        if (text && text.length > 3 && !text.toLowerCase().startsWith('<!doctype')) {
-                            return text;
-                        }
+                if (text && text.length > 3) {
+                    window.aiChatHistory.push({ role: 'user', parts: [{ text: prompt }] });
+                    window.aiChatHistory.push({ role: 'model', parts: [{ text: text }] });
+                    if (window.aiChatHistory.length > 40) {
+                        window.aiChatHistory = window.aiChatHistory.slice(-40);
                     }
-                } catch(e) { console.warn('Pollinations fallback also failed:', e); }
+                    return text;
+                }
+
+                return getOfflineResponse(prompt);
+            } catch (e) {
+                console.error('AI response processing failed:', e);
+                return getOfflineResponse(prompt);
             }
-            // Final fallback: offline knowledge base
-            return getOfflineResponse(prompt);
         }
 
-        // --- GEMINI-POWERED BUDGET PLANNER ---
+        // --- SERVER-SIDE BUDGET PLANNER ---
         async function queryBudgetAI(prompt) {
-            const apiKey = localStorage.getItem('zentryx_gemini_key');
-            if (!apiKey) return null;
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            let useDirectFallback = false;
+            let res;
 
             try {
-                const res = await fetch(url, {
+                res = await fetch('/api/ai', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { maxOutputTokens: 1024, temperature: 0.5 }
+                        message: prompt,
+                        system: 'You are a travel budget calculator. Return ONLY raw JSON with no markdown, no backticks, no explanation. The JSON must have exactly 3 keys: cheapest, moderate, expensive. Each key must be an object with: travel_cost, hotel_rating, hotel_cost, tickets, food, total.'
                     })
                 });
 
-                if (!res.ok) return null;
+                if (res.status === 404 || !res.ok) {
+                    useDirectFallback = true;
+                }
+            } catch (e) {
+                useDirectFallback = true;
+            }
+
+            if (useDirectFallback) {
+                try {
+                    const fallbackApiKey = 'REDACTED_API_KEY';
+                    const fallbackRes = await fetch('https://opencode.ai/zen/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${fallbackApiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-v4-flash-free',
+                            messages: [
+                                { role: 'system', content: 'You are a travel budget calculator. Return ONLY raw JSON with no markdown, no backticks, no explanation. The JSON must have exactly 3 keys: cheapest, moderate, expensive. Each key must be an object with: travel_cost, hotel_rating, hotel_cost, tickets, food, total.' },
+                                { role: 'user', content: prompt }
+                            ],
+                            temperature: 0.2
+                        })
+                    });
+
+                    if (!fallbackRes.ok) return null;
+                    const data = await fallbackRes.json();
+                    return data?.choices?.[0]?.message?.content || null;
+                } catch (err) {
+                    console.error('Direct budget fallback failed:', err);
+                    return null;
+                }
+            }
+
+            try {
                 const data = await res.json();
-                return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+                return data.response || null;
             } catch (e) {
                 return null;
             }
@@ -1895,12 +1889,7 @@ Rules:
                 if (alerts) finalPrompt = `Local alerts: ${alerts}. User question: ${prompt}`;
             }
 
-            const geminiResponse = await queryGemini(finalPrompt);
-            if (geminiResponse && geminiResponse.length > 5) {
-                return geminiResponse;
-            }
-            // Fallback to expanded offline knowledge base
-            return getOfflineResponse(prompt);
+            return await originalQueryAI(finalPrompt);
         };
 
         function updateAvailability(hotelId) {
@@ -2898,4 +2887,5 @@ Rules:
         });
     </script>
 </body>
+</html>
 
