@@ -263,7 +263,7 @@
                 Find Your Next Adventure
             </div>
             <h1
-                class="font-headline font-black text-6xl md:text-8xl text-white leading-none mb-6 tracking-tight uppercase">
+                class="font-headline font-black text-4xl sm:text-6xl md:text-8xl text-white leading-none mb-6 tracking-tight uppercase">
                 Travel with <span class="text-frontier-lime neon-glow-lime">Ease</span>
             </h1>
             <p
@@ -271,14 +271,14 @@
                 Experience the world with a smart travel companion that adapts to your unique preferences and keeps you
                 connected.
             </p>
-            <div class="flex flex-col md:flex-row gap-6 justify-center">
+            <div class="flex flex-col md:flex-row gap-6 justify-center px-4 sm:px-0">
                 <button onclick="openBudgetModal()"
-                    class="bg-frontier-indigo text-frontier-deep px-12 py-4 font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 neon-glow-indigo">
+                    class="bg-frontier-indigo text-frontier-deep px-6 py-3 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 neon-glow-indigo">
                     Start Planning
                 </button>
                 <button
                     onclick="openModal('Live Updates', 'Connecting to current travel conditions in your area. Please wait...')"
-                    class="border border-frontier-indigo text-frontier-indigo px-12 py-4 font-bold uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all duration-300">
+                    class="border border-frontier-indigo text-frontier-indigo px-6 py-3 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all duration-300">
                     Live Travel Updates
                 </button>
             </div>
@@ -287,8 +287,8 @@
     <!-- The Travel Cluster -->
     <section class="py-24 bg-frontier-navy/50 border-y border-frontier-indigo/10">
         <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
-            <div class="order-2 md:order-1 relative h-[500px] flex items-center justify-center">
-                <div class="relative w-full h-full">
+            <div class="order-2 md:order-1 relative h-[350px] sm:h-[500px] flex items-center justify-center overflow-hidden">
+                <div class="relative w-full h-full scale-75 sm:scale-100 origin-center">
                     <!-- Tech Ring Background -->
                     <div
                         class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-frontier-indigo/20 rounded-full animate-spin [animation-duration:15s]">
@@ -324,7 +324,7 @@
                 <span
                     class="text-xs font-bold tracking-[0.5em] uppercase text-frontier-lime mb-6 block border-l-4 border-frontier-lime pl-4">Real
                     Insights</span>
-                <h2 class="font-headline text-5xl md:text-6xl font-black text-white mb-8 uppercase tracking-tighter">
+                <h2 class="font-headline text-3xl sm:text-5xl md:text-6xl font-black text-white mb-8 uppercase tracking-tighter">
                     Guided by the <br /><span class="text-frontier-indigo">Community</span></h2>
                 <p class="font-body text-lg text-frontier-text leading-relaxed mb-10 tracking-wide">
                     Join a global community of travelers. We turn real-time experiences into a living map of
@@ -364,7 +364,7 @@
         <div class="max-w-7xl mx-auto">
             <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
                 <div class="max-w-2xl">
-                    <h2 class="font-headline text-5xl font-black text-white mb-4 uppercase tracking-tighter">Real-Time
+                    <h2 class="font-headline text-3xl sm:text-5xl font-black text-white mb-4 uppercase tracking-tighter">Real-Time
                         Updates</h2>
                     <p class="font-body text-frontier-text uppercase tracking-widest text-sm">Live information perfectly
                         synchronized with your itinerary.</p>
@@ -418,18 +418,22 @@
                         </div>
                     </div>
 
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <div class="relative flex-1">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-frontier-indigo/50 text-sm">search</span>
-                                <input id="stay-search-input" type="text" placeholder="Location (e.g. Goa, Mumbai...)" class="w-full bg-frontier-deep border border-frontier-indigo/30 pl-9 pr-3 py-2 text-[11px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-indigo transition-colors" />
-                            </div>
-                            <div class="flex gap-2 w-full sm:w-auto">
-                                <button onclick="searchStays()" class="flex-1 sm:flex-none justify-center bg-frontier-indigo text-white px-4 py-2 text-[10px] uppercase font-black hover:scale-105 active:scale-95 transition-all">Search</button>
-                                <button id="stay-sort-btn" onclick="toggleHotelSort()" class="flex-1 sm:flex-none justify-center border border-frontier-indigo/30 text-frontier-indigo px-3 py-2 text-[9px] uppercase font-bold hover:bg-frontier-indigo/10 flex items-center gap-1 transition-all">
-                                    <span class="material-symbols-outlined text-sm">swap_vert</span> Price: Low
-                                </button>
-                            </div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <div class="relative flex-1">
+                            <span
+                                class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-frontier-indigo/50 text-sm">search</span>
+                            <input id="stay-search-input" type="text" placeholder="Location (e.g. Goa, Mumbai...)"
+                                class="w-full bg-frontier-deep border border-frontier-indigo/30 pl-9 pr-3 py-2 text-[11px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-indigo transition-colors" />
                         </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="searchStays()"
+                                class="flex-1 sm:flex-none justify-center bg-frontier-indigo text-white px-4 py-2 text-[10px] uppercase font-black hover:scale-105 active:scale-95 transition-all">Search</button>
+                            <button id="stay-sort-btn" onclick="toggleHotelSort()"
+                                class="flex-1 sm:flex-none justify-center border border-frontier-indigo/30 text-frontier-indigo px-3 py-2 text-[9px] uppercase font-bold hover:bg-frontier-indigo/10 flex items-center gap-1 transition-all">
+                                <span class="material-symbols-outlined text-sm">swap_vert</span> Price: Low
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Scrollable Results Container -->
                     <div id="stay-results-grid"
@@ -600,7 +604,7 @@
                     </div>
 
                     <!-- Map Logic Overlays -->
-                    <div class="absolute top-6 left-6 z-[1000] flex flex-col gap-2">
+                    <div class="absolute top-2 left-2 sm:top-6 sm:left-6 z-[1000] flex flex-col gap-1 sm:gap-2">
                         <button onclick="toggleMapLayer('users')"
                             class="layer-btn active glass-frontier p-2.5 text-frontier-indigo border border-frontier-indigo/30 rounded-lg group"
                             id="btn-users">
@@ -628,7 +632,7 @@
 
                     <!-- Visibility switch -->
                     <div
-                        class="absolute top-6 right-6 z-[1000] glass-frontier p-3 flex items-center gap-4 rounded-lg border border-frontier-indigo/20">
+                        class="absolute top-2 right-2 sm:top-6 sm:right-6 z-[1000] glass-frontier p-2 sm:p-3 flex items-center gap-2 sm:gap-4 rounded-lg border border-frontier-indigo/20">
                         <span id="visibility-status"
                             class="text-[8px] font-black uppercase tracking-widest text-frontier-text">Incognito</span>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -642,7 +646,7 @@
 
                     <!-- Weather mini-HUD -->
                     <div
-                        class="absolute bottom-6 left-6 z-[1000] glass-frontier p-4 border border-frontier-indigo/10 flex items-center gap-6">
+                        class="absolute bottom-2 left-2 sm:bottom-6 sm:left-6 z-[1000] glass-frontier p-2 sm:p-4 border border-frontier-indigo/10 flex items-center gap-3 sm:gap-6">
                         <div class="flex items-center gap-2">
                             <span id="weather-icon" class="material-symbols-outlined text-frontier-lime">cloud</span>
                             <span id="weather-temp" class="text-xl font-black text-white">--┬░</span>
@@ -655,7 +659,7 @@
 
                     <!-- Snap action -->
                     <button onclick="snapToMe()"
-                        class="absolute bottom-6 right-6 z-[1000] glass-frontier p-3 text-frontier-lime border border-frontier-lime/30 rounded-full hover:bg-frontier-lime/10 transition-all">
+                        class="absolute bottom-2 right-2 sm:bottom-6 sm:right-6 z-[1000] glass-frontier p-2 sm:p-3 text-frontier-lime border border-frontier-lime/30 rounded-full hover:bg-frontier-lime/10 transition-all">
                         <span class="material-symbols-outlined">location_searching</span>
                     </button>
                 </div>
@@ -802,7 +806,8 @@
         </div>
     </footer>
     <!-- Chat & FAB Area -->
-    <div class="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end w-[calc(100%-32px)] sm:w-[480px]">
+    <div
+        class="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end w-[calc(100%-32px)] sm:w-[480px]">
         <!-- Chat Widget Panel (Hidden by default) -->
         <div id="ai-chat-widget"
             class="hidden w-full glass-frontier shadow-2xl mb-4 overflow-hidden border border-frontier-indigo/30 transition-all duration-300 origin-bottom-right">
@@ -826,8 +831,10 @@
                     <span class="material-symbols-outlined text-frontier-lime mt-1 text-lg">smart_toy</span>
                     <div
                         class="bg-[#11192e]/80 border border-frontier-indigo/20 rounded-sm p-3 text-frontier-text shadow-lg">
-                        <p class="text-[13px] leading-relaxed">Hi! I'm Zentryx AI — your general-purpose assistant powered by OpenCode DeepSeek v4. Tag <span
-                                class="text-frontier-lime font-bold">@ai</span> and ask me <strong>anything</strong> — travel costs, science, coding, math, history, current events, or any topic.
+                        <p class="text-[13px] leading-relaxed">Hi! I'm Zentryx AI — your general-purpose assistant
+                            powered by OpenCode DeepSeek v4. Tag <span class="text-frontier-lime font-bold">@ai</span>
+                            and ask me <strong>anything</strong> — travel costs, science, coding, math, history, current
+                            events, or any topic.
                         </p>
                     </div>
                 </div>
@@ -871,7 +878,7 @@
                         LIVE SATELLITE DATA // OPEN-METEO</div>
                 </div>
             </div>
-            <div id="forecast-grid" class="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6"></div>
+            <div id="forecast-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-6"></div>
             <p class="text-[9px] text-frontier-text italic text-center">Data synchronized via Open-Meteo Global
                 Satellite Grid. Updated every hour.</p>
         </div>
@@ -1466,7 +1473,7 @@
                 try {
                     console.log('Static server detected. Querying OpenCode directly from browser...');
                     const fallbackApiKey = 'REDACTED_API_KEY';
-                    
+
                     const messages = [
                         { role: 'system', content: 'You are Zentryx, an advanced general-purpose AI assistant embedded in a futuristic travel & intelligence dashboard. Answer in plain text only, no markdown, under 300 words.' }
                     ];
@@ -2129,8 +2136,8 @@
                 const isNow = i === 0;
                 const card = document.createElement('div');
                 card.className = `flex flex-col items-center p-3 rounded border ${isNow
-                        ? 'border-frontier-lime bg-frontier-lime/10'
-                        : 'border-frontier-indigo/20 bg-frontier-deep/60'
+                    ? 'border-frontier-lime bg-frontier-lime/10'
+                    : 'border-frontier-indigo/20 bg-frontier-deep/60'
                     } transition-all hover:border-frontier-lime/50`;
                 card.innerHTML = `
             <span class="text-[9px] font-bold tracking-widest mb-2 ${isNow ? 'text-frontier-lime' : 'text-frontier-indigo/60'}">${isNow ? 'NOW' : String(hour).padStart(2, '0') + ':00'}</span>
@@ -2360,7 +2367,7 @@
         }
 
         let currentHotelSort = 'asc'; // 'asc' = Low-High, 'desc' = High-Low
-        
+
         function toggleHotelSort() {
             currentHotelSort = currentHotelSort === 'asc' ? 'desc' : 'asc';
             const btn = document.getElementById('stay-sort-btn');
@@ -2372,7 +2379,7 @@
             const queryInput = document.getElementById('stay-search-input');
             const query = queryInput.value.trim();
             const grid = document.getElementById('stay-results-grid');
-            
+
             if (!query) {
                 queryInput.focus();
                 return;
@@ -2392,22 +2399,22 @@
                 // 1. Geocode location via Nominatim
                 const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
                 const geoRes = await fetch(geocodeUrl, { headers: { 'User-Agent': 'Zentryx-Travel-App' } });
-                
+
                 if (geoRes.ok) {
                     const geoData = await geoRes.json();
                     if (geoData && geoData.length > 0) {
                         const { lat, lon } = geoData[0];
-                        
+
                         // 2. Query Overpass (with safety check for response type)
                         const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json][timeout:20];(node["tourism"~"hotel|hostel|guest_house|motel|apartment|resort"](around:8000,${lat},${lon});way["tourism"~"hotel|hostel|guest_house|motel|apartment|resort"](around:8000,${lat},${lon}););out body;>;out skel qt;`;
                         const overpassRes = await fetch(overpassUrl);
-                        
+
                         if (overpassRes.ok && overpassRes.headers.get('content-type')?.includes('json')) {
                             const overpassData = await overpassRes.json();
                             if (overpassData.elements) {
                                 overpassData.elements.forEach(el => {
                                     if (el.tags && el.tags.name) {
-                                        const rating = el.tags.stars || (Math.random() * 4 + 1).toFixed(1); 
+                                        const rating = el.tags.stars || (Math.random() * 4 + 1).toFixed(1);
                                         const basePrice = el.tags.tourism === 'hostel' ? 500 : 1500;
                                         const priceVal = Math.floor(Math.random() * 10000 + basePrice);
                                         results.push({
@@ -2441,7 +2448,7 @@
 
             // 4. Render Final Results
             if (results.length === 0) {
-                 grid.innerHTML = `
+                grid.innerHTML = `
                     <div class="col-span-2 flex flex-col items-center justify-center py-12 text-frontier-indigo/30 space-y-2">
                         <span class="text-[10px] font-bold uppercase">Sector Empty</span>
                         <span class="text-[8px] uppercase tracking-widest">No hospitality nodes detected near ${query}</span>
@@ -2891,5 +2898,5 @@
         });
     </script>
 </body>
-</html>
 
+</html>
