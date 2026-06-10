@@ -204,7 +204,7 @@
     <div class="fixed inset-0 scanline z-[100] opacity-20"></div>
     <!-- TopNavBar (Shared Component) -->
     <nav class="fixed top-0 w-full z-50 bg-[#070d1f]/70 backdrop-blur-xl shadow-[0_0_15px_rgba(163,166,255,0.1)] h-16">
-        <div class="flex justify-between items-center px-8 h-full w-full">
+        <div class="flex justify-between items-center px-4 sm:px-8 h-full w-full">
             <div class="text-xl font-bold tracking-widest text-[#a3a6ff]">ZENTRYX</div>
             <div class="hidden md:flex items-center space-x-8 font-['Space_Grotesk'] tracking-tight text-sm uppercase">
                 <a class="text-[#ceee93] border-b-2 border-[#ceee93] pb-1" href="#">Explore</a>
@@ -403,7 +403,7 @@
                     </div>
                 </div>
                 <!-- Hotel/Stay Feature -->
-                <div class="md:col-span-2 glass-frontier p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-indigo/30 transition-all overflow-hidden relative group"
+                <div class="md:col-span-2 glass-frontier p-4 sm:p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-indigo/30 transition-all overflow-hidden relative group"
                     id="stays-card">
                     <div class="flex items-center gap-4">
                         <div
@@ -418,15 +418,17 @@
                         </div>
                     </div>
 
-                        <div class="flex flex-wrap gap-2">
-                            <div class="relative flex-1 min-w-[150px]">
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <div class="relative flex-1">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-frontier-indigo/50 text-sm">search</span>
                                 <input id="stay-search-input" type="text" placeholder="Location (e.g. Goa, Mumbai...)" class="w-full bg-frontier-deep border border-frontier-indigo/30 pl-9 pr-3 py-2 text-[11px] text-white placeholder-frontier-text focus:outline-none focus:border-frontier-indigo transition-colors" />
                             </div>
-                            <button onclick="searchStays()" class="bg-frontier-indigo text-white px-4 py-2 text-[10px] uppercase font-black hover:scale-105 active:scale-95 transition-all">Search</button>
-                            <button id="stay-sort-btn" onclick="toggleHotelSort()" class="border border-frontier-indigo/30 text-frontier-indigo px-3 py-2 text-[9px] uppercase font-bold hover:bg-frontier-indigo/10 flex items-center gap-1 transition-all">
-                                <span class="material-symbols-outlined text-sm">swap_vert</span> Price: Low
-                            </button>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button onclick="searchStays()" class="flex-1 sm:flex-none justify-center bg-frontier-indigo text-white px-4 py-2 text-[10px] uppercase font-black hover:scale-105 active:scale-95 transition-all">Search</button>
+                                <button id="stay-sort-btn" onclick="toggleHotelSort()" class="flex-1 sm:flex-none justify-center border border-frontier-indigo/30 text-frontier-indigo px-3 py-2 text-[9px] uppercase font-bold hover:bg-frontier-indigo/10 flex items-center gap-1 transition-all">
+                                    <span class="material-symbols-outlined text-sm">swap_vert</span> Price: Low
+                                </button>
+                            </div>
                         </div>
 
                     <!-- Scrollable Results Container -->
@@ -453,7 +455,7 @@
                     </div>
                 </div>
                 <!-- Traffic/Route Planner Feature -->
-                <div class="md:col-span-2 glass-frontier p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-lime transition-all"
+                <div class="md:col-span-2 glass-frontier p-4 sm:p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-lime transition-all"
                     id="route-planner-card">
                     <div class="flex items-center gap-4">
                         <div
@@ -487,21 +489,23 @@
                         </div>
                     </div>
                     <!-- Mode selector -->
-                    <div class="flex gap-2">
-                        <button onclick="setRouteMode('driving')" id="mode-driving"
-                            class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-lime text-frontier-lime bg-frontier-lime/10 transition-all">
-                            <span class="material-symbols-outlined text-sm">directions_car</span> Drive
-                        </button>
-                        <button onclick="setRouteMode('cycling')" id="mode-cycling"
-                            class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-indigo/30 text-frontier-indigo hover:border-frontier-lime hover:text-frontier-lime transition-all">
-                            <span class="material-symbols-outlined text-sm">directions_bike</span> Cycle
-                        </button>
-                        <button onclick="setRouteMode('walking')" id="mode-walking"
-                            class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-indigo/30 text-frontier-indigo hover:border-frontier-lime hover:text-frontier-lime transition-all">
-                            <span class="material-symbols-outlined text-sm">directions_walk</span> Walk
-                        </button>
+                    <div class="flex flex-wrap gap-2 items-center justify-between">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="setRouteMode('driving')" id="mode-driving"
+                                class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-lime text-frontier-lime bg-frontier-lime/10 transition-all">
+                                <span class="material-symbols-outlined text-sm">directions_car</span> Drive
+                            </button>
+                            <button onclick="setRouteMode('cycling')" id="mode-cycling"
+                                class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-indigo/30 text-frontier-indigo hover:border-frontier-lime hover:text-frontier-lime transition-all">
+                                <span class="material-symbols-outlined text-sm">directions_bike</span> Cycle
+                            </button>
+                            <button onclick="setRouteMode('walking')" id="mode-walking"
+                                class="route-mode-btn flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-widest border border-frontier-indigo/30 text-frontier-indigo hover:border-frontier-lime hover:text-frontier-lime transition-all">
+                                <span class="material-symbols-outlined text-sm">directions_walk</span> Walk
+                            </button>
+                        </div>
                         <button onclick="calculateRoute()"
-                            class="ml-auto flex items-center gap-1 px-4 py-1.5 text-[10px] uppercase tracking-widest bg-frontier-lime text-frontier-deep font-black hover:brightness-110 transition-all">
+                            class="w-full sm:w-auto flex items-center justify-center gap-1 px-4 py-1.5 text-[10px] uppercase tracking-widest bg-frontier-lime text-frontier-deep font-black hover:brightness-110 transition-all">
                             <span class="material-symbols-outlined text-sm">route</span> Get Route
                         </button>
                     </div>
@@ -569,7 +573,7 @@
         <div class="max-w-7xl mx-auto px-6 relative z-10">
             <!-- Dashboard Tabs -->
             <div class="flex items-center justify-center mb-12 border-b border-frontier-indigo/10">
-                <nav class="flex gap-12">
+                <nav class="flex gap-4 sm:gap-12">
                     <button onclick="switchDashView('map')" id="tab-map"
                         class="pb-4 text-sm font-black uppercase tracking-[0.3em] text-frontier-indigo transition-all border-b-2 border-transparent tab-active flex items-center gap-2">
                         <span class="material-symbols-outlined text-lg">map</span> Map
@@ -588,7 +592,7 @@
             <!-- 1. MAP VIEW -->
             <div id="view-map" class="dashboard-view view-active">
                 <div
-                    class="relative w-full h-[700px] shadow-[0_0_80px_rgba(4,8,22,0.8)] border border-frontier-indigo/10 rounded-sm group">
+                    class="relative w-full h-[400px] sm:h-[700px] shadow-[0_0_80px_rgba(4,8,22,0.8)] border border-frontier-indigo/10 rounded-sm group">
                     <div id="map" class="w-full h-full"></div>
 
                     <!-- Floating Map Signals Overlay (JS will spawn bubbles here) -->
@@ -798,10 +802,10 @@
         </div>
     </footer>
     <!-- Chat & FAB Area -->
-    <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end">
+    <div class="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end w-[calc(100%-32px)] sm:w-[480px]">
         <!-- Chat Widget Panel (Hidden by default) -->
         <div id="ai-chat-widget"
-            class="hidden w-[480px] glass-frontier shadow-2xl mb-4 overflow-hidden border border-frontier-indigo/30 transition-all duration-300 origin-bottom-right">
+            class="hidden w-full glass-frontier shadow-2xl mb-4 overflow-hidden border border-frontier-indigo/30 transition-all duration-300 origin-bottom-right">
             <!-- Header -->
             <div class="bg-[#11192e]/90 p-4 border-b border-frontier-indigo/20 flex justify-between items-center">
                 <div class="flex items-center gap-2">
