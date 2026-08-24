@@ -17,16 +17,14 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    if (req.url === '/api/ai' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk;
-        });
-        req.on('end', async () => {
+    // Route /api/* to the serverless handler (POST /api/ai for chat,
+    // GET /api/stats for live token usage)
+    if (req.url.startsWith('/api/') && (req.method === 'POST' || req.method === 'GET')) {
+        const isPost = req.method === 'POST';
+        const finish = () => {
             try {
-                // Parse body
-                const parsedBody = JSON.parse(body || '{}');
-                
+                const parsedBody = isPost ? JSON.parse(body || '{}') : {};
+
                 // Wrap req and res to match Vercel environment
                 const vercelReq = {
                     method: req.method,
@@ -59,13 +57,25 @@ const server = http.createServer((req, res) => {
                     }
                 };
 
-                await handler(vercelReq, vercelRes);
+                handler(vercelReq, vercelRes).catch(err => {
+                    console.error('Error in local /api handler:', err);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Internal server error' }));
+                });
             } catch (err) {
-                console.error('Error in local /api/ai handler:', err);
+                console.error('Error in local /api handler:', err);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'Internal server error' }));
             }
-        });
+        };
+
+        let body = '';
+        if (isPost) {
+            req.on('data', chunk => { body += chunk; });
+            req.on('end', finish);
+        } else {
+            finish();
+        }
         return;
     }
 

@@ -23,6 +23,39 @@ const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const RATE_LIMIT_MAX = 15; // 15 requests per minute per IP
 
+// --- Token usage tracking (in-memory, per instance) ---
+// Resets on server restart / Vercel redeploy. The OpenCode API returns a
+// `usage` object (prompt/completion/cached tokens) and a `cost` string
+// ("0" on the free tier) on every successful completion.
+const usageStats = {
+    requests: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+    cachedTokens: 0,
+    cost: 0,
+    errors: 0,
+    rateLimited: 0,
+    since: Date.now()
+};
+
+function recordUsage(data) {
+    const u = data?.usage || {};
+    usageStats.requests++;
+    usageStats.promptTokens += u.prompt_tokens || 0;
+    usageStats.completionTokens += u.completion_tokens || 0;
+    usageStats.totalTokens += u.total_tokens || 0;
+    usageStats.cachedTokens += u.prompt_tokens_details?.cached_tokens || 0;
+    const c = parseFloat(data?.cost);
+    if (!isNaN(c)) usageStats.cost += c;
+    console.log(
+        `[Zentryx AI] ${data?.model || 'unknown-model'} | ` +
+        `+${u.prompt_tokens || 0} in / +${u.completion_tokens || 0} out ` +
+        `(${u.total_tokens || 0} total) | cumulative: ${usageStats.totalTokens} tokens ` +
+        `across ${usageStats.requests} requests`
+    );
+}
+
 function isRateLimited(ip) {
     const now = Date.now();
     const entry = rateLimitMap.get(ip);
@@ -44,6 +77,23 @@ module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
+
+    // GET /api/stats — live token usage snapshot (also served by dev-server)
+    if (req.method === 'GET') {
+        return res.status(200).json({
+            requests: usageStats.requests,
+            promptTokens: usageStats.promptTokens,
+            completionTokens: usageStats.completionTokens,
+            totalTokens: usageStats.totalTokens,
+            cachedTokens: usageStats.cachedTokens,
+            cost: usageStats.cost,
+            errors: usageStats.errors,
+            rateLimited: usageStats.rateLimited,
+            since: new Date(usageStats.since).toISOString(),
+            note: 'In-memory totals since server start; resets on restart/redeploy.'
+        });
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -130,15 +180,19 @@ module.exports = async function handler(req, res) {
             console.error(`OpenCode API error (${response.status}):`, errData);
 
             if (response.status === 429 || (errData.error && errData.error.type === 'CreditsError')) {
+                usageStats.rateLimited++;
                 return res.status(429).json({ error: 'AI rate limit or credit limit reached. Please try again later.' });
             }
             if (response.status === 400 || response.status === 401 || response.status === 403) {
+                usageStats.errors++;
                 return res.status(502).json({ error: 'AI service configuration or authorization error.' });
             }
+            usageStats.errors++;
             return res.status(502).json({ error: 'AI service temporarily unavailable.' });
         }
 
         const data = await response.json();
+        recordUsage(data);
         let text = data?.choices?.[0]?.message?.content || '';
 
         // Clean any markdown formatting
@@ -162,6 +216,7 @@ module.exports = async function handler(req, res) {
 
     } catch (e) {
         console.error('Server error:', e);
+        usageStats.errors++;
         if (e.name === 'AbortError') {
             return res.status(504).json({ error: 'AI request timed out. Please try again.' });
         }
