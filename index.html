@@ -1482,13 +1482,73 @@
             95: 'Thunderstorm', 96: 'Thunderstorm with slight hail', 99: 'Thunderstorm with heavy hail'
         };
 
+        // --- WEATHER LOOKUPS ---
+        // Open-Meteo's geocoder mangles Indian tourist towns ("goa" → Genoa,
+        // Italy; "manali" → Tamil Nadu), so well-known Indian destinations
+        // resolve through this local coordinate map first.
+        const INDIAN_DESTINATIONS = {
+            amritsar: { lat: 31.6340, lon: 74.8723 },
+            shimla: { lat: 31.1048, lon: 77.1734 },
+            delhi: { lat: 28.7041, lon: 77.1025 },
+            'new delhi': { lat: 28.6139, lon: 77.2090 },
+            mumbai: { lat: 19.0760, lon: 72.8777 },
+            goa: { lat: 15.2993, lon: 74.1240 },
+            panaji: { lat: 15.4909, lon: 73.8278 },
+            jaipur: { lat: 26.9124, lon: 75.7873 },
+            udaipur: { lat: 24.5854, lon: 73.7125 },
+            manali: { lat: 32.2396, lon: 77.1887 },
+            kasol: { lat: 32.0103, lon: 77.3150 },
+            bangalore: { lat: 12.9716, lon: 77.5946 },
+            chennai: { lat: 13.0827, lon: 80.2707 },
+            kolkata: { lat: 22.5726, lon: 88.3639 },
+            darjeeling: { lat: 27.0410, lon: 88.2663 },
+            kochi: { lat: 9.9312, lon: 76.2673 },
+            agra: { lat: 27.1767, lon: 78.0081 },
+            varanasi: { lat: 25.3176, lon: 82.9739 },
+            leh: { lat: 34.1526, lon: 77.5771 },
+            ladakh: { lat: 34.1526, lon: 77.5771 },
+            rishikesh: { lat: 30.0869, lon: 78.2676 }
+        };
+
+        async function fetchWeatherByCoords(lat, lon, label) {
+            const fcRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`);
+            if (!fcRes.ok) throw new Error('Weather API ' + fcRes.status);
+            const fc = await fcRes.json();
+            const cur = fc?.current_weather;
+            if (!cur) throw new Error('No current weather');
+            const desc = WMO_CODES[cur.weathercode] || 'Unknown conditions';
+            const windDir = cur.winddirection != null ? `, wind ${cur.winddirection}°` : '';
+            return `Current weather in ${label}:\n1. Conditions: ${desc}\n2. Temperature: ${Math.round(cur.temperature)}°C\n3. Wind: ${Math.round(cur.windspeed)} km/h${windDir}\n\nData from Open-Meteo (updated every hour).`;
+        }
+
+        // Used when the question has no city name: fetch weather for the
+        // user's GPS position, or the default city when GPS is unavailable.
+        async function getWeatherForCurrentArea() {
+            const DEFAULT_COORDS = { lat: 31.6340, lon: 74.8723, label: 'Amritsar (GPS off)' };
+            const coords = await new Promise(resolve => {
+                if (!("geolocation" in navigator)) return resolve(DEFAULT_COORDS);
+                navigator.geolocation.getCurrentPosition(
+                    pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'your area' }),
+                    () => resolve(DEFAULT_COORDS),
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+                );
+            });
+
+            try {
+                return await fetchWeatherByCoords(coords.lat, coords.lon, coords.label);
+            } catch (e) {
+                console.warn('Area weather lookup failed:', e);
+                return `I couldn't fetch live weather right now. Try naming a city, e.g. "weather in Mumbai".`;
+            }
+        }
+
         async function fetchWeatherForCity(question) {
             const q = question.toLowerCase();
             // Try to pull a place name out of the question
             let city = null;
             const patterns = [
-                /(?:weather|wheather)\s+(?:in|at|for|of)?\s*([a-z][a-z\s\-]{1,40}?)(?:\?|$|\.)/i,
-                /(?:in|at|for)\s+([a-z][a-z\s\-]{1,40}?)\s*(?:weather|wheather)/i,
+                /(?:weather|wheather)\s+(?:\b(?:in|at|for|of)\b\s*)?([a-z][a-z\s\-]{1,40}?)(?:\?|$|\.)/i,
+                /\b(?:in|at|for)\s+([a-z][a-z\s\-]{1,40}?)\s*(?:weather|wheather)/i,
                 /forecast\s+(?:for|in)?\s*([a-z][a-z\s\-]{1,40}?)(?:\?|$|\.)/i
             ];
             for (const p of patterns) {
@@ -1496,9 +1556,21 @@
                 if (m && m[1].trim().length >= 2) { city = m[1].trim(); break; }
             }
 
-            // No usable city name → point to the live widget
+            // No city name → answer with the user's real location weather
+            // instead of pointing at the widget.
             if (!city) {
-                return `For live weather, check the Weather widget on your dashboard — it uses your GPS to show current conditions and a 12-hour forecast. Name a city and I'll fetch its real conditions.`;
+                return getWeatherForCurrentArea();
+            }
+
+            // Indian destinations resolve locally with correct coordinates
+            const dest = INDIAN_DESTINATIONS[city.trim().toLowerCase()];
+            if (dest) {
+                try {
+                    const pretty = city.trim().charAt(0).toUpperCase() + city.trim().slice(1);
+                    return await fetchWeatherByCoords(dest.lat, dest.lon, pretty);
+                } catch (e) {
+                    return `I couldn't fetch live weather for "${city}" right now. Try a different city name.`;
+                }
             }
 
             try {
@@ -1506,22 +1578,13 @@
                 const geo = await geoRes.json();
                 const place = geo?.results?.[0];
                 if (!place) {
-                    return `I couldn't find a city matching "${city}". Check the Weather widget on your dashboard for your current conditions, or try a different city name.`;
+                    return `I couldn't find a city matching "${city}". Try a different city name.`;
                 }
 
-                const fcRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current_weather=true&timezone=auto`);
-                const fc = await fcRes.json();
-                const cur = fc?.current_weather;
-                if (!cur) {
-                    return `Weather data for ${place.name} is temporarily unavailable. Check the Weather widget on your dashboard instead.`;
-                }
-
-                const desc = WMO_CODES[cur.weathercode] || 'Unknown conditions';
-                const windDir = cur.winddirection != null ? `, wind ${cur.winddirection}°` : '';
-                return `Current weather in ${place.name}, ${place.country || ''}:\n1. Conditions: ${desc}\n2. Temperature: ${Math.round(cur.temperature)}°C\n3. Wind: ${Math.round(cur.windspeed)} km/h${windDir}\n\nData from Open-Meteo (updated every hour).`;
+                return await fetchWeatherByCoords(place.latitude, place.longitude, `${place.name}, ${place.country || ''}`);
             } catch (e) {
                 console.warn('Weather lookup failed:', e);
-                return `I couldn't fetch live weather for "${city}" right now. Check the Weather widget on your dashboard — it uses your GPS for current conditions.`;
+                return `I couldn't fetch live weather for "${city}" right now. Try a different city name.`;
             }
         }
 
