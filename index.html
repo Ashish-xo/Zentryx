@@ -2456,14 +2456,28 @@
         // --- NEW INTELLIGENCE LAYER: AI MAP NAVIGATION ---
         let mainMap;
         function initMap() {
+            // Hard world bounds — the map stops dead at the edges instead of
+            // wrapping/repeating forever when the user drags left or right.
+            const WORLD_BOUNDS = [[-90, -180], [90, 180]];
+
             mainMap = L.map('map', {
-                center: [20, 0],
-                zoom: 2,
+                // Start on India where the live community data lives (Shimla
+                // travelers, alerts, routes) so markers are visible immediately.
+                center: [22.5, 79.5],
+                zoom: 5,
                 zoomControl: false,
-                attributionControl: false
+                attributionControl: false,
+                maxBounds: WORLD_BOUNDS,
+                maxBoundsViscosity: 1.0,
+                minZoom: 2
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mainMap);
+            // noWrap + bounds: tiles never repeat past the world edge, so a
+            // full drag right/left simply stops instead of scrolling forever.
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                noWrap: true,
+                bounds: WORLD_BOUNDS
+            }).addTo(mainMap);
 
             // Add custom zoom control at bottom right
             L.control.zoom({ position: 'bottomright' }).addTo(mainMap);
