@@ -25,7 +25,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Leaflet Heatmap Plugin -->
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"
+        integrity="sha384-mFKkGiGvT5vo1fEyGCD3hshDdKmW3wzXW/x+fWriYJArD0R3gawT6lMvLboM22c0" crossorigin="anonymous"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -1825,84 +1826,12 @@
                 useDirectFallback = true;
             }
 
-            // Client-side fallback for static servers (like VS Code Live Server)
+            // Security: no client-side fallback with an embedded API key —
+            // keys must never ship to the browser. If the backend is
+            // unreachable, the offline knowledge base still answers.
             if (useDirectFallback) {
-                try {
-                    console.log('Static server detected. Querying OpenCode directly from browser...');
-                    const fallbackApiKey = 'REDACTED_API_KEY';
-
-                    const messages = [
-                        { role: 'system', content: 'You are Zentryx, an advanced general-purpose AI assistant embedded in a futuristic travel & intelligence dashboard. Answer in plain text only, no markdown, under 300 words.' }
-                    ];
-
-                    for (const h of window.aiChatHistory.slice(-6)) {
-                        const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
-                        let content = '';
-                        if (h.parts && Array.isArray(h.parts)) {
-                            content = h.parts.map(p => p.text || '').join('');
-                        } else if (typeof h.content === 'string') {
-                            content = h.content;
-                        } else if (typeof h.text === 'string') {
-                            content = h.text;
-                        }
-                        if (content) {
-                            messages.push({ role, content });
-                        }
-                    }
-                    messages.push({ role: 'user', content: prompt.trim() });
-
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 35000);
-
-                    const fallbackRes = await fetch('https://opencode.ai/zen/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${fallbackApiKey}`
-                        },
-                        signal: controller.signal,
-                        body: JSON.stringify({
-                            model: 'laguna-s-2.1-free',
-                            messages: messages,
-                            temperature: 0.7,
-                            max_tokens: 512
-                        })
-                    });
-
-                    clearTimeout(timeoutId);
-
-                    if (!fallbackRes.ok) {
-                        const errData = await fallbackRes.json().catch(() => ({}));
-                        console.error('Direct OpenCode API error:', fallbackRes.status, errData);
-                        if (fallbackRes.status === 429 || (errData.error && errData.error.type === 'CreditsError')) {
-                            return 'AI rate limit or credit limit reached. Please try again later.';
-                        }
-                        return getOfflineResponse(prompt);
-                    }
-
-                    const data = await fallbackRes.json();
-                    let text = data?.choices?.[0]?.message?.content || '';
-
-                    text = text
-                        .replace(/\*\*/g, '')
-                        .replace(/\*/g, '')
-                        .replace(/#{1,6}\s/g, '')
-                        .replace(/`{1,3}/g, '')
-                        .trim();
-
-                    if (text) {
-                        window.aiChatHistory.push({ role: 'user', parts: [{ text: prompt }] });
-                        window.aiChatHistory.push({ role: 'model', parts: [{ text: text }] });
-                        if (window.aiChatHistory.length > 40) {
-                            window.aiChatHistory = window.aiChatHistory.slice(-40);
-                        }
-                        return text;
-                    }
-                    return getOfflineResponse(prompt);
-                } catch (err) {
-                    console.error('Direct client-side fallback failed:', err);
-                    return getOfflineResponse(prompt);
-                }
+                console.warn('AI backend unreachable — using offline knowledge base.');
+                return getOfflineResponse(prompt);
             }
 
             // Standard backend response processing
@@ -1979,31 +1908,8 @@
             }
 
             if (useDirectFallback) {
-                try {
-                    const fallbackApiKey = 'REDACTED_API_KEY';
-                    const fallbackRes = await fetch('https://opencode.ai/zen/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${fallbackApiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: 'laguna-s-2.1-free',
-                            messages: [
-                                { role: 'system', content: 'You are a travel budget calculator. Return ONLY raw JSON with no markdown, no backticks, no explanation. The JSON must have exactly 3 keys: cheapest, moderate, expensive. Each key must be an object with: travel_cost, hotel_rating, hotel_cost, tickets, food, total.' },
-                                { role: 'user', content: prompt }
-                            ],
-                            temperature: 0.2
-                        })
-                    });
-
-                    if (!fallbackRes.ok) return null;
-                    const data = await fallbackRes.json();
-                    return data?.choices?.[0]?.message?.content || null;
-                } catch (err) {
-                    console.error('Direct budget fallback failed:', err);
-                    return null;
-                }
+                console.warn('AI backend unreachable for budget planner.');
+                return null;
             }
 
             try {
@@ -2014,12 +1920,14 @@
             }
         }
 
-        function openModal(title, msg) {
+        function openModal(title, msg, allowHtml = false) {
             document.getElementById('modal-title').innerText = title;
 
             const msgEl = document.getElementById('modal-message');
-            // Check if the message is HTML (contains tags) or just text
-            if (msg.includes('<')) {
+            // Security: messages render as plain text by default. Only callers
+            // that pre-escape their data (hotel details, story viewer) opt in
+            // to markup with allowHtml=true — no free-form HTML passthrough.
+            if (allowHtml) {
                 msgEl.innerHTML = msg;
                 // Make any button rendered inside the modal message interactive
                 msgEl.querySelectorAll('button').forEach(btn => {
@@ -2058,13 +1966,15 @@
         function openHotelDetails(hotel) {
             const phone = hotel.phone || 'Not listed';
             const email = hotel.email || 'Not listed';
-            const website = hotel.website || '#';
+            const website = safeHttpUrl(hotel.website) || '#';
+            const phoneHref = safePhoneHref(phone);
+            const emailHref = safeMailHref(email);
             const address = hotel.address || hotel.city || 'Regional Sector';
             const amenities = hotel.amenities || ['Free Wi-Fi', 'Room Service', 'Airport Transfer', '24/7 Front Desk'];
             const statusClass = hotel.status && String(hotel.status).includes('Entry') ? 'text-frontier-lime' : 'text-red-400';
 
             const msg = `
-                <img src="${hotel.img}" class="w-full h-40 object-cover mb-4 grayscale brightness-75" alt="${escapeHtml(hotel.name)}">
+                <img src="${escapeHtml(hotel.img)}" class="w-full h-40 object-cover mb-4 grayscale brightness-75" alt="${escapeHtml(hotel.name)}">
                 <div class="flex justify-between items-start mb-3">
                     <div>
                         <div class="text-white font-black uppercase tracking-widest text-lg">${escapeHtml(hotel.name)}</div>
@@ -2079,15 +1989,15 @@
                 <div class="border-t border-frontier-indigo/10 pt-3 space-y-2">
                     <div class="flex items-center gap-2 text-[11px] text-frontier-text">
                         <span class="material-symbols-outlined text-sm text-frontier-indigo">call</span>
-                        <a href="tel:${phone}" class="hover:text-frontier-lime transition-colors">${escapeHtml(phone)}</a>
+                        ${phoneHref ? `<a href="${phoneHref}" class="hover:text-frontier-lime transition-colors">${escapeHtml(phone)}</a>` : `<span class="hover:text-frontier-lime transition-colors">${escapeHtml(phone)}</span>`}
                     </div>
                     <div class="flex items-center gap-2 text-[11px] text-frontier-text">
                         <span class="material-symbols-outlined text-sm text-frontier-indigo">mail</span>
-                        <a href="mailto:${email}" class="hover:text-frontier-lime transition-colors break-all">${escapeHtml(email)}</a>
+                        ${emailHref ? `<a href="${emailHref}" class="hover:text-frontier-lime transition-colors break-all">${escapeHtml(email)}</a>` : `<span class="hover:text-frontier-lime transition-colors break-all">${escapeHtml(email)}</span>`}
                     </div>
                     <div class="flex items-center gap-2 text-[11px] text-frontier-text">
                         <span class="material-symbols-outlined text-sm text-frontier-indigo">language</span>
-                        <a href="${website}" target="_blank" rel="noopener" class="hover:text-frontier-lime transition-colors break-all">${escapeHtml(website)}</a>
+                        <a href="${escapeHtml(website)}" target="_blank" rel="noopener" class="hover:text-frontier-lime transition-colors break-all">${escapeHtml(website)}</a>
                     </div>
                 </div>
                 <div class="border-t border-frontier-indigo/10 pt-3 mt-3">
@@ -2096,7 +2006,7 @@
                 </div>
                 <button class="w-full bg-frontier-indigo text-white py-2 text-[10px] font-black uppercase hover:brightness-110 mt-4">Transmit Booking Signal</button>`;
 
-            openModal(hotel.name, msg);
+            openModal(hotel.name, msg, true);
 
             // Re-wire: tel/mailto/website links keep native behavior (openModal
             // would have killed their hrefs), the booking button closes + logs.
@@ -2195,13 +2105,13 @@
                 marker.bindPopup(`
             <div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[200px]">
                 <div class="flex justify-between items-center mb-2">
-                    <span class="text-[10px] font-black text-white uppercase">${u.name}</span>
-                    <span class="reputation-badge">Trust: ${u.trust}★</span>
+                    <span class="text-[10px] font-black text-white uppercase">${escapeHtml(u.name)}</span>
+                    <span class="reputation-badge">Trust: ${escapeHtml(u.trust)}★</span>
                 </div>
-                <p class="text-[9px] text-frontier-indigo uppercase tracking-wider italic mb-3">"${u.status}"</p>
+                <p class="text-[9px] text-frontier-indigo uppercase tracking-wider italic mb-3">"${escapeHtml(u.status)}"</p>
                 <div class="flex gap-2">
-                    <button onclick="contactTraveler('${u.name}')" class="flex-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-[8px] font-bold py-1 uppercase text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep">Message</button>
-                    <button onclick="inviteTraveler('${u.name}')" class="flex-1 bg-frontier-lime/10 border border-frontier-lime/30 text-[8px] font-bold py-1 uppercase text-frontier-lime hover:bg-frontier-lime hover:text-frontier-deep">Invite</button>
+                    <button onclick="contactTraveler('${jsStr(u.name)}')" class="flex-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-[8px] font-bold py-1 uppercase text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep">Message</button>
+                    <button onclick="inviteTraveler('${jsStr(u.name)}')" class="flex-1 bg-frontier-lime/10 border border-frontier-lime/30 text-[8px] font-bold py-1 uppercase text-frontier-lime hover:bg-frontier-lime hover:text-frontier-deep">Invite</button>
                 </div>
             </div>
         `, { className: 'custom-popup' });
@@ -2226,14 +2136,14 @@
 
                 marker.bindPopup(`
             <div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[220px]">
-                <h4 class="text-xs font-black text-white uppercase mb-1">${h.name}</h4>
+                <h4 class="text-xs font-black text-white uppercase mb-1">${escapeHtml(h.name)}</h4>
                 <div class="flex items-center gap-2 mb-3">
-                    <span class="text-[8px] font-bold uppercase tracking-widest text-frontier-lime">${h.availability}</span>
+                    <span class="text-[8px] font-bold uppercase tracking-widest text-frontier-lime">${escapeHtml(h.availability)}</span>
                     <span class="w-1 h-1 bg-white/20 rounded-full"></span>
-                    <span class="text-[8px] text-frontier-text uppercase">${h.type}</span>
+                    <span class="text-[8px] text-frontier-text uppercase">${escapeHtml(h.type)}</span>
                 </div>
                 <div class="space-y-2 mb-4">
-                    ${h.posts.map(p => `<div class="text-[9px] text-frontier-indigo border-l-2 border-frontier-indigo/30 pl-2">"${p}"</div>`).join('')}
+                    ${h.posts.map(p => `<div class="text-[9px] text-frontier-indigo border-l-2 border-frontier-indigo/30 pl-2">"${escapeHtml(p)}"</div>`).join('')}
                 </div>
                 <button onclick="updateAvailability(${h.id})" class="w-full bg-[#fff]/5 border border-[#fff]/10 text-[8px] font-black py-2 uppercase tracking-widest text-[#fff] hover:bg-frontier-indigo hover:text-frontier-deep transition-all">Update Room Availability</button>
             </div>
@@ -2255,8 +2165,8 @@
                     })
                 });
                 marker.bindPopup(`<div class="bg-red-950/90 border border-red-500 p-3 text-white">
-            <div class="text-[8px] font-bold uppercase mb-1 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Live ${a.type} Alert</div>
-            <div class="text-[10px] font-bold">${a.msg}</div>
+            <div class="text-[8px] font-bold uppercase mb-1 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Live ${escapeHtml(a.type)} Alert</div>
+            <div class="text-[10px] font-bold">${escapeHtml(a.msg)}</div>
         </div>`, { className: 'custom-popup' });
                 mapLayers.alerts.addLayer(marker);
             });
@@ -2290,15 +2200,15 @@
             <div class="flex-1">
                 <div class="flex justify-between items-center mb-2">
                     <div class="flex flex-col">
-                        <span class="text-[11px] font-black text-white uppercase tracking-wider">${t.user}</span>
-                        <span class="text-[7px] text-frontier-lime font-bold uppercase tracking-widest">${t.rank} • ${t.trust} Reliable</span>
+                        <span class="text-[11px] font-black text-white uppercase tracking-wider">${escapeHtml(t.user)}</span>
+                        <span class="text-[7px] text-frontier-lime font-bold uppercase tracking-widest">${escapeHtml(t.rank)} • ${escapeHtml(t.trust)} Reliable</span>
                     </div>
-                    <span class="text-[8px] text-frontier-text uppercase">${t.time}</span>
+                    <span class="text-[8px] text-frontier-text uppercase">${escapeHtml(t.time)}</span>
                 </div>
-                <p class="text-[12px] text-frontier-text leading-relaxed tracking-wide uppercase italic">"${t.msg}"</p>
+                <p class="text-[12px] text-frontier-text leading-relaxed tracking-wide uppercase italic">"${escapeHtml(t.msg)}"</p>
                 <div class="mt-4 flex gap-4 border-t border-frontier-indigo/5 pt-4">
-                    <button onclick="sendFrequency('${t.user}')" class="text-[9px] font-black text-frontier-indigo uppercase tracking-widest flex items-center gap-1 hover:text-frontier-lime transition-colors"><span class="material-symbols-outlined text-xs">chat</span> Send Frequency</button>
-                    <button onclick="routeToIntel('${t.user}')" class="text-[9px] font-black text-frontier-text uppercase tracking-widest flex items-center gap-1 hover:text-white transition-colors"><span class="material-symbols-outlined text-xs">share_location</span> Route to Intel</button>
+                    <button onclick="sendFrequency('${jsStr(t.user)}')" class="text-[9px] font-black text-frontier-indigo uppercase tracking-widest flex items-center gap-1 hover:text-frontier-lime transition-colors"><span class="material-symbols-outlined text-xs">chat</span> Send Frequency</button>
+                    <button onclick="routeToIntel('${jsStr(t.user)}')" class="text-[9px] font-black text-frontier-text uppercase tracking-widest flex items-center gap-1 hover:text-white transition-colors"><span class="material-symbols-outlined text-xs">share_location</span> Route to Intel</button>
                 </div>
             </div>
         </div>
@@ -2309,11 +2219,11 @@
             const strip = document.getElementById('stories-strip');
             if (!strip) return;
             strip.innerHTML = COMMUNITY_DATA.stories.map(s => `
-        <div class="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group" onclick="viewStory('${s.id}')">
+        <div class="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group" onclick="viewStory('${jsStr(s.id)}')">
             <div class="story-circle ring-offset-2 ring-offset-frontier-deep">
-                <img src="${s.img}" class="w-full h-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all">
+                <img src="${escapeHtml(s.img)}" class="w-full h-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all">
             </div>
-            <span class="text-[7px] font-bold text-frontier-indigo uppercase tracking-widest">${s.loc}</span>
+            <span class="text-[7px] font-bold text-frontier-indigo uppercase tracking-widest">${escapeHtml(s.loc)}</span>
         </div>
     `).join('');
         }
@@ -2325,9 +2235,9 @@
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <span class="text-xs font-black text-frontier-indigo/40">#0${i + 1}</span>
-                <span class="text-[10px] font-black text-white uppercase">${r.user}</span>
+                <span class="text-[10px] font-black text-white uppercase">${escapeHtml(r.user)}</span>
             </div>
-            <div class="text-[9px] text-frontier-lime font-black uppercase tracking-widest">${r.assists} Intelligence Assists</div>
+            <div class="text-[9px] text-frontier-lime font-black uppercase tracking-widest">${escapeHtml(r.assists)} Intelligence Assists</div>
         </div>
     `).join('');
         }
@@ -2402,7 +2312,7 @@
         function viewStory(id) {
             const s = COMMUNITY_DATA.stories.find(x => x.id == id);
             if (s) {
-                openModal(`Intel Briefing: ${s.loc}`, `<img src="${s.img}" class="w-full h-64 object-cover mb-4 grayscale"> <p class="text-xs uppercase">Uploaded by ${s.user} • Verified via GeoSync.</p>`);
+                openModal(`Intel Briefing: ${s.loc}`, `<img src="${escapeHtml(s.img)}" class="w-full h-64 object-cover mb-4 grayscale"> <p class="text-xs uppercase">Uploaded by ${escapeHtml(s.user)} • Verified via GeoSync.</p>`, true);
                 addLog(`Viewing briefing from ${s.loc}... Accessing satellite image.`);
             }
         }
@@ -2982,7 +2892,7 @@
             <div class="text-[10px] text-frontier-text flex items-start gap-2 py-2 border-b border-frontier-indigo/5 hover:bg-frontier-indigo/5 transition-colors group">
                 <span class="text-frontier-lime font-black flex-shrink-0 w-4">${i + 1}.</span>
                 <span class="leading-relaxed">
-                    <span class="text-white font-bold group-hover:text-frontier-lime transition-all capitalize">${s.maneuver.type === 'turn' ? (s.maneuver.modifier || '') + ' onto ' : ''}${s.name || 'Continue Path'}</span>
+                    <span class="text-white font-bold group-hover:text-frontier-lime transition-all capitalize">${escapeHtml((s.maneuver.type === 'turn' ? (s.maneuver.modifier || '') + ' onto ' : '') + (s.name || 'Continue Path'))}</span>
                     <span class="text-frontier-indigo/50"> (${formatDistance(s.distance)})</span>
                 </span>
             </div>
@@ -3045,6 +2955,8 @@
             btn.innerHTML = `<span class="material-symbols-outlined text-sm">swap_vert</span> Price: ${currentHotelSort === 'asc' ? 'Low' : 'High'}`;
             searchStays(); // Re-trigger search with new sort
         }
+
+        let currentStayResults = [];
 
         async function searchStays() {
             const queryInput = document.getElementById('stay-search-input');
@@ -3125,7 +3037,7 @@
                 grid.innerHTML = `
                     <div class="col-span-2 flex flex-col items-center justify-center py-12 text-frontier-indigo/30 space-y-2">
                         <span class="text-[10px] font-bold uppercase">Sector Empty</span>
-                        <span class="text-[8px] uppercase tracking-widest">No hospitality nodes detected near ${query}</span>
+                        <span class="text-[8px] uppercase tracking-widest">No hospitality nodes detected near ${escapeHtml(query)}</span>
                     </div>
                 `;
                 return;
@@ -3136,22 +3048,31 @@
                 return currentHotelSort === 'asc' ? a.priceVal - b.priceVal : b.priceVal - a.priceVal;
             });
 
-            grid.innerHTML = results.map(hotel => `
-                <div class="glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo group cursor-pointer transition-all p-3" onclick="openHotelDetails(${JSON.stringify(hotel).replace(/"/g, '&quot;')})">
+            currentStayResults = results;
+            grid.innerHTML = results.map((hotel, i) => `
+                <div class="glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo group cursor-pointer transition-all p-3" onclick="openHotelDetailsByIndex(${i})">
                     <div class="h-28 relative overflow-hidden mb-3">
-                        <img src="${hotel.img}" class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 group-hover:brightness-100 transition-all duration-700" alt="${hotel.name}">
-                        <div class="absolute top-2 right-2 bg-frontier-deep/90 backdrop-blur px-2 py-1 text-[8px] font-bold ${hotel.rating >= 4 ? 'text-frontier-lime' : 'text-frontier-indigo'} border border-frontier-indigo/30">${hotel.rating} ★</div>
+                        <img src="${escapeHtml(hotel.img)}" class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 group-hover:brightness-100 transition-all duration-700" alt="${escapeHtml(hotel.name)}">
+                        <div class="absolute top-2 right-2 bg-frontier-deep/90 backdrop-blur px-2 py-1 text-[8px] font-bold ${hotel.rating >= 4 ? 'text-frontier-lime' : 'text-frontier-indigo'} border border-frontier-indigo/30">${escapeHtml(hotel.rating)} ★</div>
                     </div>
                     <div class="space-y-1">
-                        <h4 class="text-white text-[11px] font-black uppercase truncate leading-none">${hotel.name}</h4>
-                        <p class="text-[8px] text-frontier-text uppercase tracking-widest truncate opacity-50">${hotel.address || 'Regional Sector'}</p>
+                        <h4 class="text-white text-[11px] font-black uppercase truncate leading-none">${escapeHtml(hotel.name)}</h4>
+                        <p class="text-[8px] text-frontier-text uppercase tracking-widest truncate opacity-50">${escapeHtml(hotel.address || 'Regional Sector')}</p>
                         <div class="flex justify-between items-center pt-2">
-                            <span class="text-[10px] text-frontier-indigo font-black">${hotel.price}</span>
-                            <span class="text-[7px] uppercase tracking-tighter ${hotel.status.includes('Entry') ? 'text-frontier-lime' : 'text-red-400'}">${hotel.status}</span>
+                            <span class="text-[10px] text-frontier-indigo font-black">${escapeHtml(hotel.price)}</span>
+                            <span class="text-[7px] uppercase tracking-tighter ${hotel.status.includes('Entry') ? 'text-frontier-lime' : 'text-red-400'}">${escapeHtml(hotel.status)}</span>
                         </div>
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Security: hotel cards carry no serialized data in the DOM — they
+        // reference the in-memory results array by index, so a crafted OSM
+        // hotel name can never break out of an onclick attribute.
+        function openHotelDetailsByIndex(idx) {
+            const hotel = currentStayResults[Number(idx)];
+            if (hotel) openHotelDetails(hotel);
         }
 
         function escapeHtml(str) {
@@ -3161,6 +3082,30 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+        }
+
+        // Security helpers for data that lands in href="" or inline JS strings.
+        function safeHttpUrl(url) {
+            try {
+                const u = new URL(String(url || ''));
+                if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
+            } catch (e) { }
+            return null;
+        }
+        function safePhoneHref(phone) {
+            const digits = String(phone || '').replace(/[^\d+]/g, '');
+            return digits ? 'tel:' + digits.slice(0, 20) : null;
+        }
+        function safeMailHref(email) {
+            const e = String(email || '').trim();
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? 'mailto:' + e : null;
+        }
+        function jsStr(s) {
+            return String(s)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '');
         }
 
         function addLog(text, isAI = true) {
@@ -3478,11 +3423,45 @@
 
             // --- AUTH (demo-grade, localStorage accounts) ---
             // NOTE: client-side only — fine for a demo, NOT real security.
-            // Passwords are obfuscated with a simple hash, never sent anywhere.
-            function hashPass(s) {
-                let h = 5381;
-                for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
-                return 'h' + h.toString(36);
+            // Passwords are hashed with SHA-256 + per-account salt (Web
+            // Crypto), never stored in plaintext, never sent anywhere.
+            // Legacy djb2-hashed accounts are upgraded on first login.
+            function makeSalt() {
+            return Math.random().toString(36).slice(2) + Date.now().toString(36);
+            }
+            const CRYPTO_OK = typeof crypto !== 'undefined' && crypto.subtle;
+            async function hashPassSha256(password, salt) {
+            const data = new TextEncoder().encode(salt + ':' + password);
+            const buf = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            function hashPassLegacy(s) {
+            let h = 5381;
+            for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+            return 'h' + h.toString(36);
+            }
+            async function verifyPassword(user, pass) {
+            if (user.salt && user.hash) {
+            return (await hashPassSha256(pass, user.salt)) === user.hash;
+            }
+            // Legacy djb2 account: verify then upgrade in place
+            if (user.passHash && user.passHash === hashPassLegacy(pass)) {
+            user.salt = makeSalt();
+            user.hash = await hashPassSha256(pass, user.salt);
+            delete user.passHash;
+            saveUsers(getUsers().map(u => u.email === user.email ? user : u));
+            return true;
+            }
+            return false;
+            }
+            // In-memory login throttle: 5 failed attempts → 30s lockout per email
+            const loginThrottle = {};
+            function loginLocked(email) {
+                const t = loginThrottle[email];
+                if (!t || !t.until) return false;      // no entry, or failures so far without a lockout
+                if (Date.now() < t.until) return true; // inside the lockout window
+                delete loginThrottle[email];           // lockout expired — clear and allow
+                return false;
             }
             function getUsers() { try { return JSON.parse(localStorage.getItem('zentryx_users') || '[]'); } catch (e) { return []; } }
             function saveUsers(u) { localStorage.setItem('zentryx_users', JSON.stringify(u)); }
@@ -3491,48 +3470,63 @@
             function clearSession() { localStorage.removeItem('zentryx_session'); }
 
             function switchAuthTab(mode) {
-                const isLogin = mode === 'login';
-                document.getElementById('auth-form-login').classList.toggle('hidden', !isLogin);
-                document.getElementById('auth-form-signup').classList.toggle('hidden', isLogin);
-                document.getElementById('auth-tab-login').className = isLogin
-                    ? 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-frontier-indigo text-frontier-deep'
-                    : 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-frontier-indigo hover:bg-frontier-indigo/10';
-                document.getElementById('auth-tab-signup').className = !isLogin
-                    ? 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-frontier-lime text-frontier-deep'
-                    : 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-frontier-lime hover:bg-frontier-lime/10';
-                document.getElementById('auth-error').classList.add('hidden');
+            const isLogin = mode === 'login';
+            document.getElementById('auth-form-login').classList.toggle('hidden', !isLogin);
+            document.getElementById('auth-form-signup').classList.toggle('hidden', isLogin);
+            document.getElementById('auth-tab-login').className = isLogin
+            ? 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-frontier-indigo text-frontier-deep'
+            : 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-frontier-indigo hover:bg-frontier-indigo/10';
+            document.getElementById('auth-tab-signup').className = !isLogin
+            ? 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-frontier-lime text-frontier-deep'
+            : 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-frontier-lime hover:bg-frontier-lime/10';
+            document.getElementById('auth-error').classList.add('hidden');
             }
 
             function showAuthError(msg) {
-                const el = document.getElementById('auth-error');
-                el.innerText = msg;
-                el.classList.remove('hidden');
+            const el = document.getElementById('auth-error');
+            el.innerText = msg;
+            el.classList.remove('hidden');
             }
 
-            function authLogin() {
-                const email = document.getElementById('auth-login-email').value.trim().toLowerCase();
-                const pass = document.getElementById('auth-login-pass').value;
-                if (!email || !pass) return showAuthError('Enter your email and password.');
-                const u = getUsers().find(x => x.email === email && x.passHash === hashPass(pass));
-                if (!u) return showAuthError('Invalid credentials. Try again or create an account.');
-                setSession(u);
-                hideAuthOverlay();
+            async function authLogin() {
+            const email = document.getElementById('auth-login-email').value.trim().toLowerCase();
+            const pass = document.getElementById('auth-login-pass').value;
+            if (!email || !pass) return showAuthError('Enter your email and password.');
+            if (loginLocked(email)) return showAuthError('Too many attempts. Try again in 30 seconds.');
+            const users = getUsers();
+            const u = users.find(x => x.email === email);
+            if (!u) return showAuthError('Invalid credentials. Try again or create an account.');
+            if (!(await verifyPassword(u, pass))) {
+            const t = loginThrottle[email] = loginThrottle[email] || { count: 0, until: 0 };
+            t.count++;
+            if (t.count >= 5) { t.until = Date.now() + 30000; t.count = 0; }
+            return showAuthError('Invalid credentials. Try again or create an account.');
+            }
+            setSession(u);
+            hideAuthOverlay();
             }
 
-            function authSignup() {
-                const name = document.getElementById('auth-signup-name').value.trim();
-                const email = document.getElementById('auth-signup-email').value.trim().toLowerCase();
-                const pass = document.getElementById('auth-signup-pass').value;
-                if (name.length < 2) return showAuthError('Enter a display name.');
-                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showAuthError('Enter a valid email.');
-                if (pass.length < 6) return showAuthError('Password must be at least 6 characters.');
-                const users = getUsers();
-                if (users.some(x => x.email === email)) return showAuthError('An account with this email already exists. Sign in instead.');
-                const u = { name, email, passHash: hashPass(pass), joined: Date.now() };
-                users.push(u);
-                saveUsers(users);
-                setSession(u);
-                hideAuthOverlay();
+            async function authSignup() {
+            const name = document.getElementById('auth-signup-name').value.trim();
+            const email = document.getElementById('auth-signup-email').value.trim().toLowerCase();
+            const pass = document.getElementById('auth-signup-pass').value;
+            if (name.length < 2) return showAuthError('Enter a display name.');
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showAuthError('Enter a valid email.');
+            if (pass.length < 6) return showAuthError('Password must be at least 6 characters.');
+            const users = getUsers();
+            if (users.some(x => x.email === email)) return showAuthError('An account with this email already exists. Sign in instead.');
+            const u = { name, email, salt: makeSalt(), joined: Date.now() };
+            if (CRYPTO_OK) {
+            u.hash = await hashPassSha256(pass, u.salt);
+            } else {
+            // Fallback for file:// (non-secure context): use legacy hash
+            u.passHash = hashPassLegacy(pass);
+            delete u.salt;
+            }
+            users.push(u);
+            saveUsers(users);
+            setSession(u);
+            hideAuthOverlay();
             }
 
             function showAuthOverlay() {

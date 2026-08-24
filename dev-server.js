@@ -5,14 +5,41 @@ const handler = require('./api/ai.js');
 
 const PORT = 3000;
 
+// --- Security headers (same policy as the Vercel deployment, see vercel.json) ---
+const CSP = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+    "font-src https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://images.unsplash.com https://lh3.googleusercontent.com https://i.pravatar.cc",
+    "connect-src 'self' https://nominatim.openstreetmap.org https://overpass-api.de https://api.open-meteo.com https://geocoding-api.open-meteo.com https://router.project-osrm.org",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'"
+].join('; ');
+
+// --- .env loader (KEY=VALUE lines) ---
+// OPENCODE_API_KEY is read from the environment (Vercel injects it natively).
+// Locally, put it in a .env file next to this script — it stays out of git.
+try {
+    const envFile = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+    for (const line of envFile.split('\n')) {
+        const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+        if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+} catch (e) { /* no .env present — env vars may be set externally */ }
+
 const server = http.createServer((req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Security headers on every response
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Content-Security-Policy', CSP);
+    // Same-origin only: no CORS headers, so third-party sites can't call /api/*
 
     if (req.method === 'OPTIONS') {
-        res.writeHead(200);
+        res.writeHead(204);
         res.end();
         return;
     }
@@ -79,9 +106,22 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Serve static files
-    let filePath = req.url === '/' ? './index.html' : '.' + req.url;
-    filePath = filePath.split('?')[0].split('#')[0];
+    // Serve static files — resolve strictly inside the project root so a
+    // request like /../../etc/passwd can never escape the site directory.
+    // Also normalize a bare "/" (with or without a query string) to index.html
+    // and never try to readFile a directory (EISDIR).
+    let rawPath = req.url.split('?')[0].split('#')[0];
+    if (rawPath === '/') rawPath = '/index.html';
+    const resolved = path.normalize(path.join(__dirname, rawPath));
+    if (!resolved.startsWith(__dirname + path.sep)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Forbidden');
+        return;
+    }
+    let filePath = resolved;
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+        filePath = path.join(filePath, 'index.html');
+    }
     
     const extname = String(path.extname(filePath)).toLowerCase();
     const mimeTypes = {

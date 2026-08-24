@@ -82,10 +82,10 @@ function isRateLimited(ip) {
 }
 
 module.exports = async function handler(req, res) {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Same-origin only: the dashboard and this function share an origin
+    // (Vercel deployment or the local dev server), so no CORS headers are
+    // emitted. This stops third-party sites from calling this endpoint and
+    // burning the AI quota.
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -121,6 +121,12 @@ module.exports = async function handler(req, res) {
 
     const { message, history, system } = req.body || {};
 
+    // Guard rails: system prompts and history come from the client — cap
+    // their size so an attacker can't smuggle megabyte payloads into the
+    // upstream call, and coerce history into a known-safe shape.
+    const safeSystem = (typeof system === 'string' && system.length <= 2000) ? system : DEFAULT_SYSTEM;
+    const safeHistory = (Array.isArray(history) ? history : []).slice(-20);
+
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({ error: 'Message is required' });
     }
@@ -131,7 +137,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Use OPENCODE_API_KEY environment variable if defined, otherwise fallback to the shared key
-    const apiKey = process.env.OPENCODE_API_KEY || 'REDACTED_API_KEY';
+    const apiKey = process.env.OPENCODE_API_KEY;
     if (!apiKey) {
         console.error('OpenCode API key is not set');
         return res.status(500).json({ error: 'AI service is not configured. Please contact the site owner.' });
@@ -141,26 +147,24 @@ module.exports = async function handler(req, res) {
     const messages = [];
 
     // System instruction
-    const systemPrompt = system || DEFAULT_SYSTEM;
+    const systemPrompt = safeSystem;
     if (systemPrompt) {
         messages.push({ role: 'system', content: systemPrompt });
     }
 
     // Convert history
-    if (Array.isArray(history)) {
-        for (const h of history) {
-            const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
-            let content = '';
-            if (h.parts && Array.isArray(h.parts)) {
-                content = h.parts.map(p => p.text || '').join('');
-            } else if (typeof h.content === 'string') {
-                content = h.content;
-            } else if (typeof h.text === 'string') {
-                content = h.text;
-            }
-            if (content) {
-                messages.push({ role, content });
-            }
+    for (const h of safeHistory) {
+        const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
+        let content = '';
+        if (h.parts && Array.isArray(h.parts)) {
+            content = h.parts.map(p => p.text || '').join('');
+        } else if (typeof h.content === 'string') {
+            content = h.content;
+        } else if (typeof h.text === 'string') {
+            content = h.text;
+        }
+        if (content) {
+            messages.push({ role, content });
         }
     }
 
@@ -193,7 +197,7 @@ module.exports = async function handler(req, res) {
         return res.status(200).json(shared);
     }
 
-    const maxTokens = Number(req.body.max_tokens) || 512;
+    const maxTokens = Math.min(Math.max(Number(req.body.max_tokens) || 512, 1), 2048);
 
     const run = (async () => {
         const url = 'https://opencode.ai/zen/v1/chat/completions';
