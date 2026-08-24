@@ -4,7 +4,8 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
+    <meta name="theme-color" content="#070d1f" />
     <title>Zentryx | Digital Frontier</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -54,11 +55,60 @@
         }
     </script>
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Space Grotesk', sans-serif;
             background-color: #070d1f;
             color: #a5aac2;
             overflow-x: hidden;
+            overscroll-behavior-y: none;
+        }
+
+        /* Android/touch: kill tap delay + grey flash, enlarge hit area feel */
+        button,
+        a,
+        input,
+        [role="button"],
+        .cursor-pointer {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Small-screen readability: tiny 7-8px labels get a floor on phones */
+        @media (max-width: 480px) {
+            .text-\[7px\] {
+                font-size: 9px;
+            }
+            .text-\[8px\] {
+                font-size: 10px;
+            }
+        }
+
+        /* Dynamic viewport height — prevents URL-bar jump on Android */
+        @supports (min-height: 100dvh) {
+            .min-h-screen {
+                min-height: 100dvh;
+            }
+            .max-h-\[90vh\] {
+                max-height: 90dvh;
+            }
+        }
+
+        /* Respect users who disable motion */
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
 
         .material-symbols-outlined {
@@ -123,6 +173,7 @@
 
         .leaflet-tile-pane {
             filter: none;
+            will-change: transform;
         }
 
         .leaflet-marker-icon {
@@ -165,13 +216,11 @@
             from {
                 opacity: 0;
                 transform: translateY(10px) scale(0.99);
-                filter: blur(4px);
             }
 
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
-                filter: blur(0);
             }
         }
 
@@ -207,23 +256,24 @@
         <div class="flex justify-between items-center px-4 sm:px-8 h-full w-full">
             <div class="text-xl font-bold tracking-widest text-[#a3a6ff]">ZENTRYX</div>
             <div class="hidden md:flex items-center space-x-8 font-['Space_Grotesk'] tracking-tight text-sm uppercase">
-                <a class="text-[#ceee93] border-b-2 border-[#ceee93] pb-1" href="#">Explore</a>
-                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors" href="#">Partners</a>
-                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors" href="#">Routes</a>
-                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors" href="#">Blog</a>
+                <a class="text-[#ceee93] border-b-2 border-[#ceee93] pb-1 cursor-pointer" onclick="scrollToSection('dashboard-section')">Explore</a>
+                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="scrollToSection('features-grid-section')">Partners</a>
+                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="scrollToSection('route-planner-card')">Routes</a>
+                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="scrollToSection('testimonial-section')">Blog</a>
             </div>
             <div class="flex items-center space-x-6">
                 <div class="hidden lg:flex items-center bg-[#11192e] px-4 py-1.5 rounded border border-[#a3a6ff]/20">
                     <span class="material-symbols-outlined text-sm text-[#a3a6ff] mr-2">search</span>
-                    <input
+                    <input id="nav-search-input"
                         class="bg-transparent border-none focus:ring-0 text-xs text-[#a3a6ff] placeholder-[#a3a6ff]/40 uppercase tracking-widest"
-                        placeholder="SEARCH DESTINATIONS" type="text" />
+                        placeholder="SEARCH DESTINATIONS" type="text"
+                        onkeydown="if(event.key==='Enter'){navSearch()}" />
                 </div>
                 <div class="flex items-center gap-4 text-[#a3a6ff]">
                     <span
-                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all">notifications</span>
+                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all" onclick="openModal('Notifications', 'No new alerts. You are synced with the local travel network.')">notifications</span>
                     <span
-                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all">settings</span>
+                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all" onclick="openModal('Settings', 'Settings panel is coming soon. For now, enjoy the ride.')">settings</span>
                 </div>
                 <div class="w-8 h-8 rounded-full overflow-hidden border border-[#a3a6ff]/50 ring-2 ring-[#a3a6ff]/10">
                     <img alt="User profile commander avatar"
@@ -298,23 +348,23 @@
                     </div>
                     <!-- Digital Nodes -->
                     <div
-                        class="absolute top-10 left-10 w-24 h-24 glass-frontier flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30">
+                        class="absolute top-10 left-10 w-24 h-24 glass-frontier flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30" onclick="scrollToSection('features-grid-section')">
                         <span class="material-symbols-outlined text-4xl text-frontier-indigo"
                             data-icon="explore">explore</span>
                     </div>
                     <div
-                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 glass-frontier flex flex-col items-center justify-center shadow-2xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border-2 border-frontier-lime">
+                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 glass-frontier flex flex-col items-center justify-center shadow-2xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border-2 border-frontier-lime" onclick="openModal('SYSTEM_SYNC', 'Live telemetry linked. Your route, weather, and community intel are syncing in real time.')">
                         <span class="material-symbols-outlined text-6xl text-frontier-lime mb-2" data-icon="waves"
                             style="font-variation-settings: 'FILL' 1;">waves</span>
                         <span
                             class="text-[10px] font-bold tracking-[0.2em] uppercase text-frontier-lime">SYSTEM_SYNC</span>
                     </div>
                     <div
-                        class="absolute bottom-10 right-20 w-32 h-32 glass-frontier flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30">
+                        class="absolute bottom-10 right-20 w-32 h-32 glass-frontier flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30" onclick="scrollToMap()">
                         <span class="material-symbols-outlined text-5xl text-frontier-indigo" data-icon="map">map</span>
                     </div>
                     <div
-                        class="absolute top-1/4 right-5 w-20 h-20 glass-frontier flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30">
+                        class="absolute top-1/4 right-5 w-20 h-20 glass-frontier flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer border border-frontier-indigo/30" onclick="switchDashView('feed'); scrollToSection('dashboard-section')">
                         <span class="material-symbols-outlined text-3xl text-frontier-indigo"
                             data-icon="auto_stories">auto_stories</span>
                     </div>
@@ -648,8 +698,8 @@
                     <div
                         class="absolute bottom-2 left-2 sm:bottom-6 sm:left-6 z-[1000] glass-frontier p-2 sm:p-4 border border-frontier-indigo/10 flex items-center gap-3 sm:gap-6">
                         <div class="flex items-center gap-2">
-                            <span id="weather-icon" class="material-symbols-outlined text-frontier-lime">cloud</span>
-                            <span id="weather-temp" class="text-xl font-black text-white">--┬░</span>
+                            <span id="map-weather-icon" class="material-symbols-outlined text-frontier-lime">cloud</span>
+                            <span id="map-weather-temp" class="text-xl font-black text-white">--┬░</span>
                         </div>
                         <div class="h-6 w-px bg-white/10"></div>
                         <span id="map-status"
@@ -657,8 +707,20 @@
                             active</span>
                     </div>
 
+                    <!-- Coordinate display (hidden by default, shown by showCoordinates) -->
+                    <div id="coord-display" class="hidden absolute bottom-16 left-2 sm:bottom-24 sm:left-6 z-[1000] glass-frontier p-2 border border-frontier-lime/30 flex items-center gap-3 text-[8px] font-bold uppercase tracking-widest">
+                        <span class="text-frontier-lime">COORD</span>
+                        <span id="coord-lat" class="text-white">--</span>
+                        <span class="w-px h-4 bg-white/10"></span>
+                        <span id="coord-lon" class="text-white">--</span>
+                        <span class="w-px h-4 bg-white/10"></span>
+                        <span id="coord-bearing" class="text-frontier-indigo">--</span>
+                        <span class="w-px h-4 bg-white/10"></span>
+                        <span id="coord-name" class="text-frontier-lime/70 truncate max-w-[120px]">--</span>
+                    </div>
+
                     <!-- Snap action -->
-                    <button onclick="snapToMe()"
+                    <button onclick="snapToMe()" id="snap-btn"
                         class="absolute bottom-2 right-2 sm:bottom-6 sm:right-6 z-[1000] glass-frontier p-2 sm:p-3 text-frontier-lime border border-frontier-lime/30 rounded-full hover:bg-frontier-lime/10 transition-all">
                         <span class="material-symbols-outlined">location_searching</span>
                     </button>
@@ -675,6 +737,10 @@
                         <button onclick="postStory()"
                             class="flex-shrink-0 w-12 h-12 border-2 border-dashed border-frontier-lime/30 rounded-full flex items-center justify-center text-frontier-lime hover:border-frontier-lime transition-all">
                             <span class="material-symbols-outlined">add</span>
+                        </button>
+                        <button onclick="postTripThread()"
+                            class="flex-shrink-0 flex items-center gap-2 border border-frontier-indigo/30 text-frontier-indigo px-4 py-2 text-[9px] font-black uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all">
+                            <span class="material-symbols-outlined text-sm">campaign</span> Broadcast
                         </button>
                     </div>
                     <!-- Bulletin Board -->
@@ -734,7 +800,7 @@
 
 
     <!-- Testimonial -->
-    <section class="py-32 px-6 border-t border-frontier-indigo/10">
+    <section class="py-32 px-6 border-t border-frontier-indigo/10" id="testimonial-section">
         <div class="max-w-4xl mx-auto text-center">
             <span class="material-symbols-outlined text-frontier-lime text-6xl mb-8"
                 style="font-variation-settings: 'FILL' 1;">format_quote</span>
@@ -763,15 +829,15 @@
                 </p>
                 <div class="flex gap-4">
                     <div
-                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer">
+                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer" onclick="openModal('Global Network', 'Zentryx connects to travel networks worldwide.')">
                         <span class="material-symbols-outlined text-xl">language</span>
                     </div>
                     <div
-                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer">
+                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer" onclick="openModal('Capture Mode', 'Camera feed coming soon. Frame the moment and broadcast it to the community.')">
                         <span class="material-symbols-outlined text-xl">camera</span>
                     </div>
                     <div
-                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer">
+                        class="w-10 h-10 border border-frontier-indigo/20 flex items-center justify-center text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep transition-all cursor-pointer" onclick="openModal('Share', 'Share your Zentryx frequency with fellow travelers via link, QR, or social.')">
                         <span class="material-symbols-outlined text-xl">share</span>
                     </div>
                 </div>
@@ -781,10 +847,10 @@
                     class="font-bold text-white mb-6 uppercase tracking-widest text-xs border-l-2 border-frontier-lime pl-3">
                     Navigation</h5>
                 <ul class="space-y-4 text-frontier-text text-xs uppercase tracking-widest">
-                    <li><a class="hover:text-frontier-lime transition-colors" href="#">Community</a></li>
-                    <li><a class="hover:text-frontier-lime transition-colors" href="#">Travel Blog</a></li>
-                    <li><a class="hover:text-frontier-lime transition-colors" href="#">Partners</a></li>
-                    <li><a class="hover:text-frontier-lime transition-colors" href="#">User Reviews</a></li>
+                    <li><a class="hover:text-frontier-lime transition-colors cursor-pointer" onclick="scrollToSection('dashboard-section'); switchDashView('feed')">Community</a></li>
+                    <li><a class="hover:text-frontier-lime transition-colors cursor-pointer" onclick="scrollToSection('testimonial-section')">Travel Blog</a></li>
+                    <li><a class="hover:text-frontier-lime transition-colors cursor-pointer" onclick="scrollToSection('features-grid-section')">Partners</a></li>
+                    <li><a class="hover:text-frontier-lime transition-colors cursor-pointer" onclick="scrollToSection('testimonial-section')">User Reviews</a></li>
                 </ul>
             </div>
             <div>
@@ -792,10 +858,10 @@
                     class="font-bold text-white mb-6 uppercase tracking-widest text-xs border-l-2 border-frontier-indigo pl-3">
                     Legal & Support</h5>
                 <ul class="space-y-4 text-frontier-text text-xs uppercase tracking-widest">
-                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Our Story</a></li>
-                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Privacy Policy</a></li>
-                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Terms of Use</a></li>
-                    <li><a class="hover:text-frontier-indigo transition-colors" href="#">Contact Us</a></li>
+                    <li><a class="hover:text-frontier-indigo transition-colors cursor-pointer" onclick="openModal('Our Story', 'Zentryx was born to turn global travel data into a living, breathing map of possibility.')">Our Story</a></li>
+                    <li><a class="hover:text-frontier-indigo transition-colors cursor-pointer" onclick="openModal('Privacy Policy', 'Your location and travel data stay encrypted and are never sold. Full policy coming soon.')">Privacy Policy</a></li>
+                    <li><a class="hover:text-frontier-indigo transition-colors cursor-pointer" onclick="openModal('Terms of Use', 'Use Zentryx responsibly. Community intel is crowdsourced and should be verified.')">Terms of Use</a></li>
+                    <li><a class="hover:text-frontier-indigo transition-colors cursor-pointer" onclick="openModal('Contact Us', 'Reach the Zentryx command at support@zentryx.app — average response under 24h.')">Contact Us</a></li>
                 </ul>
             </div>
         </div>
@@ -916,6 +982,28 @@
         class="fixed inset-0 z-[250] hidden items-center justify-center bg-frontier-deep/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
         <div class="glass-frontier p-8 border border-frontier-indigo/30 w-[95%] max-w-5xl shadow-[0_0_40px_rgba(163,166,255,0.15)] relative scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto"
             id="budget-modal-content">
+
+    <!-- Ask Input Modal (Android-safe replacement for prompt()) -->
+    <div id="ask-modal"
+        class="fixed inset-0 z-[300] hidden items-center justify-center bg-frontier-deep/90 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="glass-frontier p-6 border border-frontier-lime/30 w-[90%] max-w-sm shadow-lg relative scale-95 transition-transform duration-300"
+            id="ask-modal-content">
+            <button onclick="closeAskModal()"
+                class="absolute top-3 right-3 text-frontier-text hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+            <h3 id="ask-title" class="font-headline font-black text-white text-sm uppercase tracking-widest mb-4"></h3>
+            <input id="ask-input" type="text"
+                class="w-full bg-frontier-deep border border-frontier-indigo/30 text-white p-3 text-xs mb-4 focus:outline-none focus:border-frontier-lime transition-colors"
+                onkeydown="if(event.key==='Enter') confirmAsk()" />
+            <div class="flex gap-2">
+                <button onclick="confirmAsk()"
+                    class="flex-1 bg-frontier-lime text-frontier-deep py-2 text-[10px] font-black uppercase tracking-widest hover:brightness-110 transition-all">Confirm</button>
+                <button onclick="closeAskModal()"
+                    class="flex-1 border border-frontier-indigo/30 text-frontier-indigo py-2 text-[10px] font-black uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all">Cancel</button>
+            </div>
+        </div>
+    </div>
             <button onclick="closeBudgetModal()"
                 class="absolute top-4 right-4 text-frontier-text hover:text-white transition-colors">
                 <span class="material-symbols-outlined">close</span>
@@ -1029,7 +1117,9 @@
             background: #070d1f !important;
         }
 
-        .leaflet-tile {
+        /* Dark map theme — applied once on the pane (1 filter op) instead of
+           per-tile, so Android panning stays smooth */
+        .leaflet-tile-pane {
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
 
@@ -1643,6 +1733,13 @@
             // Check if the message is HTML (contains tags) or just text
             if (msg.includes('<')) {
                 msgEl.innerHTML = msg;
+                // Make any button rendered inside the modal message interactive
+                msgEl.querySelectorAll('button').forEach(btn => {
+                    btn.onclick = () => {
+                        closeModal();
+                        addLog("Booking signal transmitted. Awaiting confirmation from the property node.");
+                    };
+                });
             } else {
                 msgEl.innerText = msg;
             }
@@ -1755,8 +1852,8 @@
                 </div>
                 <p class="text-[9px] text-frontier-indigo uppercase tracking-wider italic mb-3">"${u.status}"</p>
                 <div class="flex gap-2">
-                    <button class="flex-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-[8px] font-bold py-1 uppercase text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep">Message</button>
-                    <button class="flex-1 bg-frontier-lime/10 border border-frontier-lime/30 text-[8px] font-bold py-1 uppercase text-frontier-lime hover:bg-frontier-lime hover:text-frontier-deep">Invite</button>
+                    <button onclick="contactTraveler('${u.name}')" class="flex-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-[8px] font-bold py-1 uppercase text-frontier-indigo hover:bg-frontier-indigo hover:text-frontier-deep">Message</button>
+                    <button onclick="inviteTraveler('${u.name}')" class="flex-1 bg-frontier-lime/10 border border-frontier-lime/30 text-[8px] font-bold py-1 uppercase text-frontier-lime hover:bg-frontier-lime hover:text-frontier-deep">Invite</button>
                 </div>
             </div>
         `, { className: 'custom-popup' });
@@ -1852,8 +1949,8 @@
                 </div>
                 <p class="text-[12px] text-frontier-text leading-relaxed tracking-wide uppercase italic">"${t.msg}"</p>
                 <div class="mt-4 flex gap-4 border-t border-frontier-indigo/5 pt-4">
-                    <button class="text-[9px] font-black text-frontier-indigo uppercase tracking-widest flex items-center gap-1 hover:text-frontier-lime transition-colors"><span class="material-symbols-outlined text-xs">chat</span> Send Frequency</button>
-                    <button class="text-[9px] font-black text-frontier-text uppercase tracking-widest flex items-center gap-1 hover:text-white transition-colors"><span class="material-symbols-outlined text-xs">share_location</span> Route to Intel</button>
+                    <button onclick="sendFrequency('${t.user}')" class="text-[9px] font-black text-frontier-indigo uppercase tracking-widest flex items-center gap-1 hover:text-frontier-lime transition-colors"><span class="material-symbols-outlined text-xs">chat</span> Send Frequency</button>
+                    <button onclick="routeToIntel('${t.user}')" class="text-[9px] font-black text-frontier-text uppercase tracking-widest flex items-center gap-1 hover:text-white transition-colors"><span class="material-symbols-outlined text-xs">share_location</span> Route to Intel</button>
                 </div>
             </div>
         </div>
@@ -1906,20 +2003,18 @@
         function updateAvailability(hotelId) {
             const h = COMMUNITY_DATA.hotspots.find(x => x.id === hotelId);
             if (!h) return;
-            const newStatus = prompt(`Update status for ${h.name}:`, h.availability);
-            if (newStatus) {
+            askInput(`Update status for ${h.name}`, h.availability, (newStatus) => {
                 h.availability = newStatus;
                 h.posts.unshift(`Update: ${newStatus}`);
                 addLog(`Intelligence update: ${h.name} is now ${newStatus}.`);
                 renderMapIntel();
                 // Simulate reputation gain
                 addLog("Reputation Points +10 for community intelligence contributing!");
-            }
+            });
         }
 
         function postTripThread() {
-            const msg = prompt("Broadcast your update to the region:");
-            if (msg) {
+            askInput("Broadcast your update to the region:", "Message...", (msg) => {
                 COMMUNITY_DATA.threads.unshift({
                     user: "YOU (COMMANDER)",
                     rank: "Elite Traveler",
@@ -1929,13 +2024,12 @@
                 });
                 renderThreads();
                 addLog("Trip broadcast transmitted successfully.");
-            }
+            });
         }
 
         function postStory() {
             addLog("Story capture mode active. Frame the moment and broadcast.");
-            const loc = prompt("Tag Location:");
-            if (loc) {
+            askInput("Tag Location:", "e.g. Shimla Mall", (loc) => {
                 COMMUNITY_DATA.stories.unshift({
                     id: Date.now(),
                     loc: loc,
@@ -1943,7 +2037,7 @@
                     img: "https://i.pravatar.cc/150?u=commander"
                 });
                 renderStories();
-            }
+            });
         }
 
         function viewStory(id) {
@@ -1957,6 +2051,27 @@
         function viewIntel(id) {
             addLog(`Accessing ${id} intelligence record... Authorization granted.`);
             openModal("Community Intel", `Accessing specialized data for cluster: ${id}. Verified by travelers with 4.5+ trust scores.`);
+        }
+
+        function contactTraveler(name) {
+            addLog(`Opening encrypted channel to ${name}...`);
+            openModal(`Message ${name}`, `Secure channel established. Say hi — they're a ${name.includes('Sara') ? 'Local Insider' : 'Verified Traveler'} on the network.`);
+        }
+
+        function inviteTraveler(name) {
+            addLog(`Invitation relayed to ${name}.`);
+            openModal("Invite Sent", `Invitation transmitted to <b>${name}</b>. They'll see it in their next sync.`);
+        }
+
+        function sendFrequency(user) {
+            addLog(`Frequency handshake with ${user}...`);
+            openModal("Frequency Synced", `Your channel with <b>${user}</b> is now locked and broadcasting.`);
+        }
+
+        function routeToIntel(user) {
+            addLog(`Routing to ${user}'s last known coordinates...`);
+            openModal("Route to Intel", `Plotting an optimized path to <b>${user}</b>'s last broadcast position. Check the Map tab.`);
+            if (typeof switchDashView === 'function') switchDashView('map');
         }
 
         // --- ELITE DASHBOARD ENGINE (Swipe/Tab Switching + Heatmap) ---
@@ -2063,6 +2178,14 @@
                         const tempEl = document.getElementById('weather-temp');
                         if (tempEl) tempEl.innerText = `${Math.round(temperature)}┬░C`;
 
+                        // Also update the compact map HUD (renamed IDs, no dupes)
+                        const mapTemp = document.getElementById('map-weather-temp');
+                        if (mapTemp) mapTemp.innerText = `${Math.round(temperature)}┬░`;
+                        const mapIcon = document.getElementById('map-weather-icon');
+                        if (mapIcon) {
+                            mapIcon.innerText = weathercode <= 3 ? 'sunny' : (weathercode >= 61 ? 'rainy' : 'cloudy');
+                        }
+
                         // Simple weather code to icon mapping
                         const weatherDesc = document.getElementById('weather-desc');
                         const weatherIcon = document.getElementById('weather-icon');
@@ -2168,6 +2291,64 @@
             }, 300);
         }
 
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.scrollIntoView) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.scrollTo(0, el.offsetTop);
+            }
+        }
+
+        function navSearch() {
+            const q = document.getElementById('nav-search-input').value.trim();
+            if (!q) return;
+            // Reuse the co-pilot map search engine, then jump to the map
+            document.getElementById('co-pilot-input').value = q;
+            switchDashView('map');
+            scrollToSection('dashboard-section');
+            navCommand();
+        }
+
+        // --- ANDROID-SAFE TEXT INPUT (replaces window.prompt, which is
+        // unsupported on Android WebView / iOS Safari) ---
+        function askInput(title, placeholder, onSubmit) {
+            document.getElementById('ask-title').innerText = title;
+            const field = document.getElementById('ask-input');
+            field.value = '';
+            field.placeholder = placeholder || '';
+            const modal = document.getElementById('ask-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('ask-modal-content').classList.remove('scale-95');
+            }, 10);
+            setTimeout(() => field.focus(), 150);
+            window.__askSubmit = onSubmit;
+        }
+
+        function closeAskModal() {
+            const modal = document.getElementById('ask-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('ask-modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function confirmAsk() {
+            const val = document.getElementById('ask-input').value.trim();
+            if (val && typeof window.__askSubmit === 'function') {
+                const cb = window.__askSubmit;
+                window.__askSubmit = null;
+                closeAskModal();
+                cb(val);
+            }
+        }
+
         function scrollToMap() {
             // Switch to the map tab in the dashboard
             if (typeof switchDashView === 'function') {
@@ -2177,7 +2358,11 @@
             // Scroll the entire dashboard section into view
             const dashboard = document.getElementById('dashboard-section');
             if (dashboard) {
-                dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (dashboard.scrollIntoView) {
+                    dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    window.scrollTo(0, dashboard.offsetTop);
+                }
             }
         }
 
@@ -2470,7 +2655,7 @@
                     </div>
                     <div class="space-y-1">
                         <h4 class="text-white text-[11px] font-black uppercase truncate leading-none">${hotel.name}</h4>
-                        <p class="text-[8px] text-frontier-text uppercase tracking-widest truncate opacity-50">${hotel.address}</p>
+                        <p class="text-[8px] text-frontier-text uppercase tracking-widest truncate opacity-50">${hotel.address || 'Regional Sector'}</p>
                         <div class="flex justify-between items-center pt-2">
                             <span class="text-[10px] text-frontier-indigo font-black">${hotel.price}</span>
                             <span class="text-[7px] uppercase tracking-tighter ${hotel.status.includes('Entry') ? 'text-frontier-lime' : 'text-red-400'}">${hotel.status}</span>
@@ -2783,6 +2968,10 @@
             });
 
             document.querySelectorAll('button').forEach((el, index) => {
+                // Skip buttons inside modals / the chat widget / FAB — they
+                // start hidden and would stay invisible (opacity:0) until the
+                // IntersectionObserver fires, making them feel dead.
+                if (el.closest('#ai-chat-widget, [id$="-modal"], #hud-modal, #weather-modal, #budget-modal, #ask-modal')) return;
                 if (!el.classList.contains('scroll-reveal')) {
                     el.classList.add('scroll-scale-up');
                     el.style.transitionDelay = `${(index % 2) * 150}ms`;
@@ -2808,10 +2997,12 @@
             initCommunity();
 
             // 3. BUTTERY SMOOTH LERP SCROLL PHYSICS
-            // We use requestAnimationFrame and a linear interpolation (lerp) function
-            // to make the scroll effects feel like native app animations.
-            let currentScrollY = 0;
+            // requestAnimationFrame + lerp, but the loop only runs while the
+            // scroll position is actually moving — no idle battery drain.
+            let currentScrollY = window.scrollY;
             let targetScrollY = window.scrollY;
+            let rafId = null;
+            let lastFrameTime = 0;
 
             const lerp = (start, end, factor) => start + (end - start) * factor;
 
@@ -2819,6 +3010,14 @@
             const heroGroup = document.querySelector('section:nth-of-type(1) .z-10');
             const spinners = document.querySelectorAll('.grid .relative.w-full.h-full > div.rounded-full');
             const navbar = document.querySelector('nav');
+
+            // Cache layout reads — offsetTop is only re-measured on resize,
+            // never per-frame (per-frame reads force layout thrash on Android).
+            const bentoGridSect = document.getElementById('features-grid-section');
+            let bentoOffsetTop = bentoGridSect ? bentoGridSect.offsetTop : 0;
+            window.addEventListener('resize', () => {
+                if (bentoGridSect) bentoOffsetTop = bentoGridSect.offsetTop;
+            });
 
             // Reset Hero Images to initial scale to allow for parallax zooming
             if (heroImageNodes) {
@@ -2830,7 +3029,6 @@
 
             if (spinners) {
                 spinners.forEach(spin => {
-                    // Because they are in absolutely positioned containers, we apply rotation cleanly
                     spin.style.willChange = "transform";
                 });
             }
@@ -2846,11 +3044,21 @@
                         navbar.classList.remove('nav-scrolled');
                     }
                 }
-            });
 
-            const renderLoop = () => {
-                // Calculate the smoothed scroll position
-                currentScrollY = lerp(currentScrollY, targetScrollY, 0.08);
+                if (rafId === null) {
+                    rafId = requestAnimationFrame(renderLoop);
+                }
+            }, { passive: true });
+
+            const renderLoop = (timestamp) => {
+                rafId = null;
+
+                // Frame-rate independent lerp (60fps-ish factor)
+                const dt = Math.min((timestamp - lastFrameTime) / 16.667, 3);
+                lastFrameTime = timestamp;
+                currentScrollY = lerp(currentScrollY, targetScrollY, 1 - Math.pow(0.9, dt));
+
+                const delta = Math.abs(targetScrollY - currentScrollY);
 
                 // Hero Image Parallax (Moving vertically + scaling down for a zoom-out effect)
                 if (heroImageNodes.length >= 3) {
@@ -2869,32 +3077,21 @@
                     heroGroup.style.opacity = Math.max(1 - currentScrollY / 500, 0);
                 }
 
-                // Coordinated Parallax for Bento Grid Cards
-                const bentoGridSect = document.getElementById('features-grid-section');
-                if (bentoGridSect) {
-                    const cards = bentoGridSect.querySelectorAll('.glass-frontier');
-                    cards.forEach((card, i) => {
-                        const speed = [0.05, 0.03, 0.08][i % 3];
-                        // Calculate relative scroll within the section's proximity
-                        const relativeScroll = currentScrollY - bentoGridSect.offsetTop + 400;
-                        if (card.classList.contains('is-visible')) {
-                            card.style.transform = `translateY(${relativeScroll * speed * -1}px)`;
-                        }
-                    });
-                }
-
                 // Smooth continuous rotation linked to scroll for UI Rings
                 if (spinners.length >= 2) {
-                    // Apply the spinning rotation on top of their positioning
                     spinners[0].style.transform = `translate(-50%, -50%) rotate(${currentScrollY * 0.25}deg)`;
                     spinners[1].style.transform = `translate(-50%, -50%) rotate(${currentScrollY * -0.35}deg)`;
                 }
 
-                requestAnimationFrame(renderLoop);
+                // Keep animating while the scroll is still settling, otherwise
+                // stop the loop entirely (battery + GPU savings on Android).
+                if (delta > 0.5) {
+                    rafId = requestAnimationFrame(renderLoop);
+                }
             };
 
             // Start the physics loop
-            renderLoop();
+            renderLoop(performance.now());
         });
     </script>
 </body>
