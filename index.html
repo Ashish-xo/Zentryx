@@ -1445,11 +1445,16 @@
             }
         }
 
-        function getOfflineResponse(question) {
+        // --- ZERO-TOKEN LOCAL KNOWLEDGE ROUTER ---
+        // Tried FIRST for every question (Layer 3): if this returns an answer,
+        // no API call is made at all. Returns null when the question needs
+        // the real LLM. Matching is intent-based so travel queries like
+        // "North Goa restaurants" don't get hijacked by keyword spiels.
+        function getLocalAnswer(question) {
             const q = question.toLowerCase();
 
-            // --- GREETINGS ---
-            if (/^\s*@?ai\s*$|\b(hello|hi|hey|hii|sup)\b/i.test(q) && q.length < 25) {
+            // --- GREETINGS (only if the whole message is a greeting) ---
+            if (/^\s*@?ai\s*[!.]?\s*$|^(hello|hi|hey|hii|sup|yo|hola|namaste)\b[!.?\s]*$/i.test(q)) {
                 return `Hello! I'm Zentryx AI. Tag @ai before your message to ask me anything — travel, science, math, coding, history, or any topic. Powered by OpenCode AI.`;
             }
 
@@ -1458,18 +1463,19 @@
                 return fetchWeatherForCity(q);
             }
 
-            // --- DIRECTIONS & NAVIGATION ---
-            if (q.includes('north') || q.includes('south') || q.includes('east') || q.includes('west') || q.includes('compass') || q.includes('direction') || q.includes('navigate') || q.includes('north star') || q.includes('polaris')) {
+            // --- DIRECTIONS & NAVIGATION (intent words only, so "North Goa
+            // restaurants" isn't hijacked by the compass lecture) ---
+            if (q.includes('direction') || q.includes('navigate') || q.includes('compass') || q.includes('north star') || q.includes('polaris') || q.includes('which way is') || q.includes('find my way') || q.includes('bearing')) {
                 return `Basic Direction Finding:\n1. Sun: Rises in the East, sets in the West. At noon, your shadow points North (Northern Hemisphere).\n2. Night sky: Find the Big Dipper constellation, then follow its two pointer stars to Polaris (North Star) which always points True North.\n3. Watch method: Point the hour hand at the sun. South is halfway between the hour hand and 12 o'clock.\n4. Moss: Tends to grow on the shaded (North) side of trees.\n5. Stick & shadow: Push a stick vertically into the ground, mark the shadow tip, wait 15 min, mark again. The line from first to second mark points East.`;
             }
 
-            // --- SURVIVAL: FIRE ---
-            if (q.includes('fire') || (q.includes('start') && q.includes('flame'))) {
+            // --- SURVIVAL: FIRE (only explicit fire-making intent) ---
+            if (/(start|make|build|light).{0,15}fire|fire.{0,15}(start|make|build|tinder|survival|drill|bow|without)/i.test(q)) {
                 return `Survival — Starting a Fire:\n1. Gather dry tinder: dead grass, dry leaves, bark shavings, cotton fluff.\n2. Collect kindling: pencil-thin dry twigs and small sticks.\n3. Build a teepee shape with kindling over the tinder.\n4. Ignite: Use a lighter, match, ferro rod (strike sparks onto tinder), or friction (bow drill method).\n5. Gently blow at the base of the tinder to feed the ember oxygen.\n6. Add larger sticks gradually as the fire grows.\nKey rule: Dead, dry wood burns. Green or wet wood only smokes.`;
             }
 
-            // --- SURVIVAL: WATER ---
-            if ((q.includes('water') && (q.includes('drink') || q.includes('safe') || q.includes('purif') || q.includes('clean') || q.includes('filter'))) || q.includes('dehydrat')) {
+            // --- SURVIVAL: WATER (explicit purification intent only) ---
+            if (/(purif|boil|filter).{0,15}water|water.{0,15}(purif|boil|filter|stream)|dehydrat|water.{0,10}survival/i.test(q)) {
                 return `Water Purification in the Wild:\n1. Boiling: Bring to a rolling boil for 1 full minute (3 minutes above 2,000m altitude). Most effective method.\n2. Chemical: Iodine or chlorine dioxide tablets — wait 30 minutes after adding.\n3. Solar (SODIS): Fill a clear plastic bottle, leave in direct sunlight for 6+ hours.\n4. Improvised filter: Layer grass, sand, and charcoal in a container — removes particles but does NOT kill pathogens (always boil after).\n5. Signs of safe water: fast-moving streams are safer than stagnant pools. Never drink water that smells foul or looks oily.`;
             }
 
@@ -1488,8 +1494,8 @@
                 return `Wild Food Foraging Basics:\n1. Universal Edibility Test: Rub plant on wrist, wait 15 min for reaction. Then touch to lips, wait. Then a small piece on tongue. Swallow only if no burning/tingling after each step.\n2. Safe bets: Pine inner bark (edible), Cattail roots and shoots (highly nutritious), Dandelion (entire plant edible), Blackberries/raspberries (if you recognize them).\n3. AVOID: Mushrooms unless expert-identified. White or yellow berries (90% are poisonous). Anything that smells like almonds (cyanide). Shiny leaves (often toxic).\n4. Insects: Grasshoppers, ants, and grubs are high-protein survival food worldwide. Remove wings and legs, cook before eating.`;
             }
 
-            // --- SURVIVAL: SIGNALING FOR HELP ---
-            if (q.includes('signal') || q.includes('rescue') || q.includes('help find') || q.includes('lost in') || q.includes('sos')) {
+            // --- SURVIVAL: SIGNALING FOR HELP (explicit distress only) ---
+            if (q.includes('sos') || q.includes('rescue') || q.includes('signal for help') || q.includes('help find me') || (q.includes('lost') && (q.includes('wild') || q.includes('forest') || q.includes('jungle') || q.includes('mountains')))) {
                 return `Signaling for Rescue (SOS):\n1. International distress signal: 3 of anything — 3 whistle blasts, 3 fires in a triangle, 3 gunshots.\n2. Signal mirror: Flash sunlight toward aircraft or distant points. Can be seen 80+ km away on a clear day.\n3. Ground-to-air signals: Stamp large symbols in snow or arrange rocks/logs. X = need medical help. V = need help. Arrow = travelling this direction.\n4. Fire/smoke: Green leafy wood creates white smoke visible in forests. Rubber or plastic creates dark smoke visible in open terrain.\n5. Stay put: Rescuers search from your last known position. Moving makes you harder to find.`;
             }
 
@@ -1581,8 +1587,44 @@
                 return `Food in India: Street food 30-100 INR, Local restaurant 100-300 INR, Fine dining 1000+ INR. A thali is the best value at 80-200 INR for a full meal.`;
             }
 
-            // --- ULTIMATE FALLBACK ---
+            // --- ULTIMATE FALLBACK: no local match — the LLM is needed ---
+            return null;
+        }
+
+        // Fallback used when the AI server/API is unreachable: try the local
+        // router, and only if it also has nothing, say so.
+        function getOfflineResponse(question) {
+            const a = getLocalAnswer(question);
+            if (a !== null) return a;
             return `I couldn't reach the AI server right now — this might be a temporary network issue. Please try again in a moment. In the meantime, I can answer questions about: travel routes, survival skills, directions, geography, science, history, and math.`;
+        }
+
+        // --- Layer 2: per-browser AI quota (20 questions/hour) ---
+        // Only API-bound questions consume quota — local-router answers are free.
+        const AI_HOURLY_LIMIT = 20;
+        function aiQuotaState() {
+            try {
+                return JSON.parse(localStorage.getItem('zentryx_ai_quota') || '{"w":0,"c":0,"d":""}');
+            } catch (e) {
+                return { w: 0, c: 0, d: "" };
+            }
+        }
+        function aiQuotaRemaining() {
+            const now = Date.now();
+            const s = aiQuotaState();
+            const today = new Date().toDateString();
+            if (now - s.w > 3600000 || s.d !== today) {
+                s.w = now;
+                s.c = 0;
+                s.d = today;
+                localStorage.setItem('zentryx_ai_quota', JSON.stringify(s));
+            }
+            return AI_HOURLY_LIMIT - (s.c || 0);
+        }
+        function aiQuotaConsume() {
+            const s = aiQuotaState();
+            s.c = (s.c || 0) + 1;
+            localStorage.setItem('zentryx_ai_quota', JSON.stringify(s));
         }
 
         // --- SERVER-SIDE AI ENGINE (OpenCode) ---
@@ -1590,6 +1632,21 @@
 
         async function queryAI(prompt) {
             window.aiChatHistory = window.aiChatHistory || [];
+
+            // --- Layer 3: zero-token local knowledge router FIRST ---
+            // Weather, routes, budgets, GK, survival — all answered locally
+            // without spending a single API token.
+            const localAnswer = getLocalAnswer(prompt);
+            if (localAnswer !== null) {
+                return typeof localAnswer === 'string' ? localAnswer : await localAnswer;
+            }
+
+            // --- Layer 2: per-browser AI quota (20 questions/hour) ---
+            // Only API-bound questions reach this point, so only they consume quota.
+            if (aiQuotaRemaining() <= 0) {
+                return `You've reached this browser's AI limit for the hour (${AI_HOURLY_LIMIT} questions). The offline knowledge base still answers routes, weather, and general questions — or try again in a bit.`;
+            }
+            aiQuotaConsume();
 
             let useDirectFallback = false;
             let res;
@@ -1604,7 +1661,8 @@
                     signal: controller.signal,
                     body: JSON.stringify({
                         message: prompt,
-                        history: window.aiChatHistory.slice(-20)
+                        history: window.aiChatHistory.slice(-6),
+                        max_tokens: 512
                     })
                 });
 
@@ -1628,7 +1686,7 @@
                         { role: 'system', content: 'You are Zentryx, an advanced general-purpose AI assistant embedded in a futuristic travel & intelligence dashboard. Answer in plain text only, no markdown, under 300 words.' }
                     ];
 
-                    for (const h of window.aiChatHistory.slice(-20)) {
+                    for (const h of window.aiChatHistory.slice(-6)) {
                         const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
                         let content = '';
                         if (h.parts && Array.isArray(h.parts)) {
@@ -1658,7 +1716,7 @@
                             model: 'laguna-s-2.1-free',
                             messages: messages,
                             temperature: 0.7,
-                            max_tokens: 2048
+                            max_tokens: 512
                         })
                     });
 
@@ -1704,6 +1762,11 @@
                     const errData = await res.json().catch(() => ({}));
                     console.error('AI API error:', res.status, errData);
                     if (res.status === 429) {
+                        // Daily token budget exhausted → offline knowledge base.
+                        // Everything else → rate limited, tell the user to wait.
+                        if (errData && errData.error && String(errData.error).includes('budget')) {
+                            return getOfflineResponse(prompt);
+                        }
                         return 'You are sending too many requests. Please wait a moment and try again.';
                     }
                     return getOfflineResponse(prompt);
@@ -1730,6 +1793,21 @@
 
         // --- SERVER-SIDE BUDGET PLANNER ---
         async function queryBudgetAI(prompt) {
+            // --- Layer 3: known routes get instant local estimates (zero tokens) ---
+            const route = findRoute(prompt);
+            if (route) {
+                const dc = TRAVEL_DB.dailyCosts;
+                return JSON.stringify({
+                    "cheapest": { travel_cost: route.busCost || route.trainCost, hotel_rating: "1-2 star / Hostel", hotel_cost: dc.india_budget.hotel + "/night", tickets: route.trainCost, food: dc.india_budget.food + "/day", total: "Approx 2000-4000 INR/day" },
+                    "moderate": { travel_cost: route.trainCost, hotel_rating: "3 star", hotel_cost: dc.india_moderate.hotel + "/night", tickets: route.trainCost, food: dc.india_moderate.food + "/day", total: "Approx 4000-8000 INR/day" },
+                    "expensive": { travel_cost: route.flightCost, hotel_rating: "4-5 star", hotel_cost: dc.india_luxury.hotel + "/night", tickets: route.flightCost, food: dc.india_luxury.food + "/day", total: "Approx 12000-25000 INR/day" }
+                });
+            }
+
+            // --- Layer 2: per-browser AI quota ---
+            if (aiQuotaRemaining() <= 0) return null;
+            aiQuotaConsume();
+
             let useDirectFallback = false;
             let res;
 
@@ -1739,7 +1817,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: prompt,
-                        system: 'You are a travel budget calculator. Return ONLY raw JSON with no markdown, no backticks, no explanation. The JSON must have exactly 3 keys: cheapest, moderate, expensive. Each key must be an object with: travel_cost, hotel_rating, hotel_cost, tickets, food, total.'
+                        system: 'You are a travel budget calculator. Return ONLY raw JSON with no markdown, no backticks, no explanation. The JSON must have exactly 3 keys: cheapest, moderate, expensive. Each key must be an object with: travel_cost, hotel_rating, hotel_cost, tickets, food, total.',
+                        max_tokens: 2048
                     })
                 });
 
