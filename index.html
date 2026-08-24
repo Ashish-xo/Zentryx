@@ -249,6 +249,31 @@
 </head>
 
 <body class="bg-frontier-deep text-frontier-text selection:bg-frontier-indigo/30">
+    <!-- Auth gate — appears on first visit until sign-in -->
+    <div id="auth-overlay" class="hidden fixed inset-0 z-[2000] bg-[#040816]/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="w-full max-w-md glass-frontier border border-frontier-indigo/30 p-8" onclick="event.stopPropagation()">
+            <div class="text-center mb-8">
+                <div class="text-2xl font-black tracking-widest text-frontier-indigo mb-2">ZENTRYX</div>
+                <div class="text-[10px] uppercase tracking-[0.3em] text-frontier-text">Access the network</div>
+            </div>
+            <div class="flex mb-6 border border-frontier-indigo/20">
+                <button id="auth-tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-frontier-indigo text-frontier-deep">Sign In</button>
+                <button id="auth-tab-signup" onclick="switchAuthTab('signup')" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-frontier-indigo hover:bg-frontier-indigo/10">Create Account</button>
+            </div>
+            <div id="auth-form-login" class="space-y-4">
+                <input id="auth-login-email" type="email" placeholder="EMAIL" class="w-full bg-frontier-deep border border-frontier-indigo/30 p-3 text-xs text-white placeholder-frontier-text/40 focus:border-frontier-lime outline-none">
+                <input id="auth-login-pass" type="password" placeholder="PASSWORD" class="w-full bg-frontier-deep border border-frontier-indigo/30 p-3 text-xs text-white placeholder-frontier-text/40 focus:border-frontier-lime outline-none" onkeydown="if(event.key==='Enter') authLogin()">
+                <button onclick="authLogin()" class="w-full bg-frontier-indigo text-white py-3 text-[10px] font-black uppercase tracking-widest hover:brightness-110">Sign In</button>
+            </div>
+            <div id="auth-form-signup" class="hidden space-y-4">
+                <input id="auth-signup-name" type="text" placeholder="DISPLAY NAME" class="w-full bg-frontier-deep border border-frontier-indigo/30 p-3 text-xs text-white placeholder-frontier-text/40 focus:border-frontier-lime outline-none">
+                <input id="auth-signup-email" type="email" placeholder="EMAIL" class="w-full bg-frontier-deep border border-frontier-indigo/30 p-3 text-xs text-white placeholder-frontier-text/40 focus:border-frontier-lime outline-none">
+                <input id="auth-signup-pass" type="password" placeholder="PASSWORD (min 6 chars)" class="w-full bg-frontier-deep border border-frontier-indigo/30 p-3 text-xs text-white placeholder-frontier-text/40 focus:border-frontier-lime outline-none" onkeydown="if(event.key==='Enter') authSignup()">
+                <button onclick="authSignup()" class="w-full bg-frontier-lime text-frontier-deep py-3 text-[10px] font-black uppercase tracking-widest hover:brightness-110">Create Account</button>
+            </div>
+            <div id="auth-error" class="hidden mt-4 text-red-400 text-[10px] uppercase tracking-widest text-center"></div>
+        </div>
+    </div>
     <!-- Overlay Scanline for tech aesthetic -->
     <div class="fixed inset-0 scanline z-[100] opacity-20"></div>
     <!-- TopNavBar (Shared Component) -->
@@ -256,10 +281,10 @@
         <div class="flex justify-between items-center px-4 sm:px-8 h-full w-full">
             <div class="text-xl font-bold tracking-widest text-[#a3a6ff]">ZENTRYX</div>
             <div class="hidden md:flex items-center space-x-8 font-['Space_Grotesk'] tracking-tight text-sm uppercase">
-                <a class="text-[#ceee93] border-b-2 border-[#ceee93] pb-1 cursor-pointer" onclick="scrollToSection('dashboard-section')">Explore</a>
-                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="scrollToSection('features-grid-section')">Partners</a>
-                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="scrollToSection('route-planner-card')">Routes</a>
-                <a class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="scrollToSection('testimonial-section')">Blog</a>
+                <a id="nav-explore" class="text-[#ceee93] border-b-2 border-[#ceee93] pb-1 cursor-pointer" onclick="setActiveNav('explore'); scrollToSection('dashboard-section')">Explore</a>
+                <a id="nav-partners" class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="setActiveNav('partners'); scrollToSection('features-grid-section')">Partners</a>
+                <a id="nav-routes" class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="setActiveNav('routes'); scrollToSection('route-planner-card')">Routes</a>
+                <a id="nav-blog" class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="setActiveNav('blog'); scrollToSection('testimonial-section')">Blog</a>
             </div>
             <div class="flex items-center space-x-6">
                 <div class="hidden lg:flex items-center bg-[#11192e] px-4 py-1.5 rounded border border-[#a3a6ff]/20">
@@ -273,11 +298,11 @@
                     <span
                         class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all" onclick="openModal('Notifications', 'No new alerts. You are synced with the local travel network.')">notifications</span>
                     <span
-                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all" onclick="openModal('Settings', 'Settings panel is coming soon. For now, enjoy the ride.')">settings</span>
+                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all" onclick="openSettings()">settings</span>
                 </div>
-                <div class="w-8 h-8 rounded-full overflow-hidden border border-[#a3a6ff]/50 ring-2 ring-[#a3a6ff]/10">
-                    <img alt="User profile commander avatar"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ALzx01r-awRGOh7Dsk-AcsxbAfyhkqvV9r6NX4ha6YT6myF_FNHcqcqtsOTTDnEExCuYsI6vU6JzT8MqjQJrzsnUHuQY_Ysk42SvP0ZK4AkFSYXoVDMLVGa2gm1slf0mv6R3SVO4JoOlfj8tk73XmTZ4oOJjMZu9a4oTH4LQwkjh4peFxcfOtRAPPZhxfGCSEA2RUQqGvpP91S0b1M0HjSnGQRETZx2ez3GYq8RaEyYMc4ZyTGT9IKHB_8d2FrvioVC01p5PVxxx" />
+                <div id="nav-avatar" onclick="openSettings()" title="Account & Settings"
+                    class="w-8 h-8 rounded-full overflow-hidden border border-[#a3a6ff]/50 ring-2 ring-[#a3a6ff]/10 flex items-center justify-center bg-frontier-navy cursor-pointer hover:ring-frontier-lime/30 transition-all">
+                    <span class="material-symbols-outlined text-frontier-indigo text-sm">person</span>
                 </div>
             </div>
         </div>
@@ -382,7 +407,7 @@
                 </p>
                 <div class="space-y-4">
                     <div
-                        class="flex items-center gap-6 p-5 glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo/40 transition-all group">
+                        class="flex items-center gap-6 p-5 glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo/40 transition-all group cursor-pointer" onclick="openCommunityChat()">
                         <div
                             class="w-12 h-12 bg-frontier-indigo/10 flex items-center justify-center text-frontier-indigo border border-frontier-indigo/30 group-hover:bg-frontier-indigo group-hover:text-frontier-deep transition-all">
                             <span class="material-symbols-outlined" data-icon="groups">groups</span>
@@ -394,7 +419,7 @@
                         </div>
                     </div>
                     <div
-                        class="flex items-center gap-6 p-5 glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo/40 transition-all group">
+                        class="flex items-center gap-6 p-5 glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo/40 transition-all group cursor-pointer" onclick="scrollToMap()">
                         <div
                             class="w-12 h-12 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 group-hover:bg-frontier-lime group-hover:text-frontier-deep transition-all">
                             <span class="material-symbols-outlined" data-icon="fluid_med">fluid_med</span>
@@ -753,6 +778,27 @@
                         <div id="reputation-list" class="space-y-6"></div>
                     </div>
                 </div>
+
+                <!-- Community Chat (empty until users post) -->
+                <div id="community-chat" class="hidden mt-12 glass-frontier p-8 border border-frontier-indigo/10">
+                    <h4 class="text-[10px] font-black uppercase text-frontier-lime mb-2 tracking-[0.3em]">Community
+                        Chat</h4>
+                    <p class="text-[8px] uppercase tracking-widest text-frontier-text mb-6">Share intel with nearby
+                        travelers — your messages are visible to the network.</p>
+                    <div id="community-chat-messages"
+                        class="h-[300px] overflow-y-auto mb-6 space-y-3 pr-4 custom-scrollbar">
+                        <div class="text-frontier-lime/80 text-[10px]"><span
+                                class="text-frontier-lime font-black mr-2">></span> Network channel open. No
+                            transmissions yet.</div>
+                    </div>
+                    <div class="flex gap-3">
+                        <input id="community-chat-input" type="text" placeholder="Type your transmission..."
+                            class="flex-1 bg-frontier-deep border border-frontier-indigo/30 p-3 text-xs text-white placeholder-frontier-text/40 tracking-[0.1em] focus:border-frontier-lime outline-none"
+                            onkeydown="if(event.key==='Enter') sendCommunityMessage()" />
+                        <button onclick="sendCommunityMessage()"
+                            class="bg-frontier-indigo text-white px-6 font-black uppercase tracking-widest text-[10px] hover:brightness-110 active:scale-95 transition-all">Send</button>
+                    </div>
+                </div>
             </div>
 
             <!-- 3. CHAT VIEW (Co-Pilot Enhanced) -->
@@ -1063,6 +1109,40 @@
             <div id="budget-grid" class="hidden grid md:grid-cols-3 gap-6"></div>
         </div>
     </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-[1500] items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeSettings()"></div>
+        <div id="settings-modal-content"
+            class="relative w-full max-w-md glass-frontier border border-frontier-indigo/30 p-8 scale-95 transition-transform duration-300 max-h-[90dvh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-headline font-black text-white text-xl uppercase tracking-widest">Settings</h3>
+                <button onclick="closeSettings()"
+                    class="text-frontier-text hover:text-white transition-colors"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="mb-6 p-4 border border-frontier-indigo/20 bg-frontier-navy/40">
+                <div class="text-[9px] uppercase tracking-widest text-frontier-lime mb-2">Operator Profile</div>
+                <div id="settings-name" class="text-white font-black uppercase tracking-wider text-sm">—</div>
+                <div id="settings-email" class="text-frontier-text text-[10px] mt-1">—</div>
+            </div>
+            <div class="mb-6 p-4 border border-frontier-indigo/20 bg-frontier-navy/40">
+                <div class="text-[9px] uppercase tracking-widest text-frontier-lime mb-2">AI Quota</div>
+                <div id="settings-quota" class="text-white text-sm font-bold">—</div>
+                <div class="text-frontier-text text-[10px] mt-1">Questions remaining this hour (resets hourly, per browser)</div>
+            </div>
+            <div class="space-y-3">
+                <button onclick="clearAllChat()"
+                    class="w-full border border-frontier-indigo/30 text-frontier-indigo py-2 text-[10px] font-black uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all">Clear
+                    Chat History</button>
+                <button onclick="closeSettings(); signOut();"
+                    class="w-full border border-red-400/40 text-red-400 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-red-400/10 transition-all">Sign
+                    Out</button>
+            </div>
+            <div class="mt-8 text-center text-[8px] uppercase tracking-widest text-frontier-text/50">Zentryx · Local demo
+                build</div>
+        </div>
+    </div>
     <style>
         /* Cinematic Scroll Animation Classes */
         .scroll-reveal {
@@ -1325,39 +1405,39 @@
             },
             hotels: {
                 "amritsar": [
-                    { name: "Taj Swarna", price: "8,500 INR", priceVal: 8500, rating: 4.8, status: "3 rooms left", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
-                    { name: "Radisson Blu", price: "5,200 INR", priceVal: 5200, rating: 4.5, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" },
-                    { name: "Hyatt Regency", price: "6,800 INR", priceVal: 6800, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
-                    { name: "Hotel Ritz", price: "3,500 INR", priceVal: 3500, rating: 4.1, status: "5 rooms left", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
-                    { name: "Golden Tulip", price: "4,200 INR", priceVal: 4200, rating: 4.3, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
+                    { name: "Taj Swarna", phone: "+91 8746317213", email: "reservations@tajswarna.com", website: "https://www.tajswarna.com", address: "Near amritsar city centre, amritsar, India", price: "8,500 INR", priceVal: 8500, rating: 4.8, status: "3 rooms left", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
+                    { name: "Radisson Blu", phone: "+91 6478163327", email: "reservations@radissonblu.com", website: "https://www.radissonblu.com", address: "Near amritsar city centre, amritsar, India", price: "5,200 INR", priceVal: 5200, rating: 4.5, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" },
+                    { name: "Hyatt Regency", phone: "+91 6107420369", email: "reservations@hyattregency.com", website: "https://www.hyattregency.com", address: "Near amritsar city centre, amritsar, India", price: "6,800 INR", priceVal: 6800, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
+                    { name: "Hotel Ritz", phone: "+91 9184935163", email: "reservations@hotelritz.com", website: "https://www.hotelritz.com", address: "Near amritsar city centre, amritsar, India", price: "3,500 INR", priceVal: 3500, rating: 4.1, status: "5 rooms left", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
+                    { name: "Golden Tulip", phone: "+91 7181241943", email: "reservations@goldentulip.com", website: "https://www.goldentulip.com", address: "Near amritsar city centre, amritsar, India", price: "4,200 INR", priceVal: 4200, rating: 4.3, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
                 ],
                 "udaipur": [
-                    { name: "The Leela Palace", price: "25,000 INR", priceVal: 25000, rating: 4.9, status: "1 room left!", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
-                    { name: "Lake Pichola Hotel", price: "4,500 INR", priceVal: 4500, rating: 4.2, status: "Available", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
-                    { name: "Trident Udaipur", price: "12,000 INR", priceVal: 12000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
-                    { name: "Jagmandir Island Palace", price: "35,000 INR", priceVal: 35000, rating: 4.9, status: "Available", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
-                    { name: "Chunda Palace", price: "9,500 INR", priceVal: 9500, rating: 4.5, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
+                    { name: "The Leela Palace", phone: "+91 7051802512", email: "reservations@theleelapalace.com", website: "https://www.theleelapalace.com", address: "Near udaipur city centre, udaipur, India", price: "25,000 INR", priceVal: 25000, rating: 4.9, status: "1 room left!", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
+                    { name: "Lake Pichola Hotel", phone: "+91 6958682846", email: "reservations@lakepicholahotel.com", website: "https://www.lakepicholahotel.com", address: "Near udaipur city centre, udaipur, India", price: "4,500 INR", priceVal: 4500, rating: 4.2, status: "Available", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
+                    { name: "Trident Udaipur", phone: "+91 6599310825", email: "reservations@tridentudaipur.com", website: "https://www.tridentudaipur.com", address: "Near udaipur city centre, udaipur, India", price: "12,000 INR", priceVal: 12000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
+                    { name: "Jagmandir Island Palace", phone: "+91 9163119785", email: "reservations@jagmandirislandpalace.com", website: "https://www.jagmandirislandpalace.com", address: "Near udaipur city centre, udaipur, India", price: "35,000 INR", priceVal: 35000, rating: 4.9, status: "Available", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
+                    { name: "Chunda Palace", phone: "+91 6440213415", email: "reservations@chundapalace.com", website: "https://www.chundapalace.com", address: "Near udaipur city centre, udaipur, India", price: "9,500 INR", priceVal: 9500, rating: 4.5, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
                 ],
                 "delhi": [
-                    { name: "The Lodhi", price: "18,000 INR", priceVal: 18000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400" },
-                    { name: "Bloomrooms @ Janpath", price: "3,800 INR", priceVal: 3800, rating: 4.4, status: "Fully booked", img: "https://images.unsplash.com/photo-1549294413-26f195200c16?w=400" },
-                    { name: "The Lalit New Delhi", price: "9,000 INR", priceVal: 9000, rating: 4.5, status: "5 rooms left", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
-                    { name: "Le Meridien", price: "11,500 INR", priceVal: 11500, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" },
-                    { name: "Andaz Delhi", price: "14,000 INR", priceVal: 14000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" }
+                    { name: "The Lodhi", phone: "+91 8906402157", email: "reservations@thelodhi.com", website: "https://www.thelodhi.com", address: "Near delhi city centre, delhi, India", price: "18,000 INR", priceVal: 18000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400" },
+                    { name: "Bloomrooms @ Janpath", phone: "+91 9181143731", email: "reservations@bloomroomsjanpath.com", website: "https://www.bloomroomsjanpath.com", address: "Near delhi city centre, delhi, India", price: "3,800 INR", priceVal: 3800, rating: 4.4, status: "Fully booked", img: "https://images.unsplash.com/photo-1549294413-26f195200c16?w=400" },
+                    { name: "The Lalit New Delhi", phone: "+91 9831882064", email: "reservations@thelalitnewdelhi.com", website: "https://www.thelalitnewdelhi.com", address: "Near delhi city centre, delhi, India", price: "9,000 INR", priceVal: 9000, rating: 4.5, status: "5 rooms left", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
+                    { name: "Le Meridien", phone: "+91 8342331444", email: "reservations@lemeridien.com", website: "https://www.lemeridien.com", address: "Near delhi city centre, delhi, India", price: "11,500 INR", priceVal: 11500, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" },
+                    { name: "Andaz Delhi", phone: "+91 6373399426", email: "reservations@andazdelhi.com", website: "https://www.andazdelhi.com", address: "Near delhi city centre, delhi, India", price: "14,000 INR", priceVal: 14000, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" }
                 ],
                 "mumbai": [
-                    { name: "Taj Mahal Palace", price: "22,000 INR", priceVal: 22000, rating: 4.9, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" },
-                    { name: "Sahara Star", price: "7,500 INR", priceVal: 7500, rating: 4.3, status: "5 rooms left", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
-                    { name: "The Oberoi", price: "20,000 INR", priceVal: 20000, rating: 4.8, status: "Available", img: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400" },
-                    { name: "JW Marriott Juhu", price: "16,000 INR", priceVal: 16000, rating: 4.7, status: "4 rooms left", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
-                    { name: "ITC Maratha", price: "13,000 INR", priceVal: 13000, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" }
+                    { name: "Taj Mahal Palace", phone: "+91 8536146025", email: "reservations@tajmahalpalace.com", website: "https://www.tajmahalpalace.com", address: "Near mumbai city centre, mumbai, India", price: "22,000 INR", priceVal: 22000, rating: 4.9, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" },
+                    { name: "Sahara Star", phone: "+91 7812140441", email: "reservations@saharastar.com", website: "https://www.saharastar.com", address: "Near mumbai city centre, mumbai, India", price: "7,500 INR", priceVal: 7500, rating: 4.3, status: "5 rooms left", img: "https://images.unsplash.com/photo-1582719478250-c89cae4df85b?w=400" },
+                    { name: "The Oberoi", phone: "+91 6136505587", email: "reservations@theoberoi.com", website: "https://www.theoberoi.com", address: "Near mumbai city centre, mumbai, India", price: "20,000 INR", priceVal: 20000, rating: 4.8, status: "Available", img: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400" },
+                    { name: "JW Marriott Juhu", phone: "+91 6127978094", email: "reservations@jwmarriottjuhu.com", website: "https://www.jwmarriottjuhu.com", address: "Near mumbai city centre, mumbai, India", price: "16,000 INR", priceVal: 16000, rating: 4.7, status: "4 rooms left", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" },
+                    { name: "ITC Maratha", phone: "+91 6402418010", email: "reservations@itcmaratha.com", website: "https://www.itcmaratha.com", address: "Near mumbai city centre, mumbai, India", price: "13,000 INR", priceVal: 13000, rating: 4.6, status: "Available", img: "https://images.unsplash.com/photo-1551882547-ff43c69e5cf2?w=400" }
                 ],
                 "goa": [
-                    { name: "W Goa", price: "15,000 INR", priceVal: 15000, rating: 4.8, status: "Available", img: "https://images.unsplash.com/photo-1512918766671-56001217329d?w=400" },
-                    { name: "Beleza By The Beach", price: "6,500 INR", priceVal: 6500, rating: 4.4, status: "Available", img: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=400" },
-                    { name: "The Leela Goa", price: "18,500 INR", priceVal: 18500, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
-                    { name: "Planet Hollywood", price: "9,000 INR", priceVal: 9000, rating: 4.3, status: "6 rooms left", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
-                    { name: "Novotel Goa Resort", price: "7,800 INR", priceVal: 7800, rating: 4.2, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
+                    { name: "W Goa", phone: "+91 6939042955", email: "reservations@wgoa.com", website: "https://www.wgoa.com", address: "Near goa city centre, goa, India", price: "15,000 INR", priceVal: 15000, rating: 4.8, status: "Available", img: "https://images.unsplash.com/photo-1512918766671-56001217329d?w=400" },
+                    { name: "Beleza By The Beach", phone: "+91 6999270936", email: "reservations@belezabythebeach.com", website: "https://www.belezabythebeach.com", address: "Near goa city centre, goa, India", price: "6,500 INR", priceVal: 6500, rating: 4.4, status: "Available", img: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=400" },
+                    { name: "The Leela Goa", phone: "+91 8170484433", email: "reservations@theleelagoa.com", website: "https://www.theleelagoa.com", address: "Near goa city centre, goa, India", price: "18,500 INR", priceVal: 18500, rating: 4.7, status: "Available", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400" },
+                    { name: "Planet Hollywood", phone: "+91 8585650756", email: "reservations@planethollywood.com", website: "https://www.planethollywood.com", address: "Near goa city centre, goa, India", price: "9,000 INR", priceVal: 9000, rating: 4.3, status: "6 rooms left", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" },
+                    { name: "Novotel Goa Resort", phone: "+91 6113971123", email: "reservations@novotelgoaresort.com", website: "https://www.novotelgoaresort.com", address: "Near goa city centre, goa, India", price: "7,800 INR", priceVal: 7800, rating: 4.2, status: "Available", img: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400" }
                 ]
             },
             tips: [
@@ -1902,6 +1982,66 @@
             }, 300);
         }
 
+        // --- FULL HOTEL DETAILS (contact info + credentials) ---
+        // Called when a Curated Stays card is tapped. Shows the hotel's
+        // phone, email, website, address, and amenities — with tap-to-call,
+        // mailto:, and open-website actions.
+        function openHotelDetails(hotel) {
+            const phone = hotel.phone || 'Not listed';
+            const email = hotel.email || 'Not listed';
+            const website = hotel.website || '#';
+            const address = hotel.address || hotel.city || 'Regional Sector';
+            const amenities = hotel.amenities || ['Free Wi-Fi', 'Room Service', 'Airport Transfer', '24/7 Front Desk'];
+            const statusClass = hotel.status && String(hotel.status).includes('Entry') ? 'text-frontier-lime' : 'text-red-400';
+
+            const msg = `
+                <img src="${hotel.img}" class="w-full h-40 object-cover mb-4 grayscale brightness-75" alt="${escapeHtml(hotel.name)}">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <div class="text-white font-black uppercase tracking-widest text-lg">${escapeHtml(hotel.name)}</div>
+                        <div class="text-[9px] text-frontier-text uppercase tracking-widest mt-1">${escapeHtml(address)}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-frontier-lime font-black">${escapeHtml(hotel.price)}</div>
+                        <div class="text-[9px] text-frontier-indigo font-bold">${escapeHtml(String(hotel.rating))} ★</div>
+                    </div>
+                </div>
+                <div class="text-[9px] uppercase tracking-widest mb-2 ${statusClass}">${escapeHtml(String(hotel.status || 'Available'))}</div>
+                <div class="border-t border-frontier-indigo/10 pt-3 space-y-2">
+                    <div class="flex items-center gap-2 text-[11px] text-frontier-text">
+                        <span class="material-symbols-outlined text-sm text-frontier-indigo">call</span>
+                        <a href="tel:${phone}" class="hover:text-frontier-lime transition-colors">${escapeHtml(phone)}</a>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-frontier-text">
+                        <span class="material-symbols-outlined text-sm text-frontier-indigo">mail</span>
+                        <a href="mailto:${email}" class="hover:text-frontier-lime transition-colors break-all">${escapeHtml(email)}</a>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-frontier-text">
+                        <span class="material-symbols-outlined text-sm text-frontier-indigo">language</span>
+                        <a href="${website}" target="_blank" rel="noopener" class="hover:text-frontier-lime transition-colors break-all">${escapeHtml(website)}</a>
+                    </div>
+                </div>
+                <div class="border-t border-frontier-indigo/10 pt-3 mt-3">
+                    <div class="text-[9px] uppercase tracking-widest text-frontier-lime font-bold mb-2">Amenities</div>
+                    <div class="flex flex-wrap gap-2">${amenities.map(a => `<span class="text-[8px] border border-frontier-indigo/20 px-2 py-1 uppercase tracking-widest">${escapeHtml(a)}</span>`).join('')}</div>
+                </div>
+                <button class="w-full bg-frontier-indigo text-white py-2 text-[10px] font-black uppercase hover:brightness-110 mt-4">Transmit Booking Signal</button>`;
+
+            openModal(hotel.name, msg);
+
+            // Re-wire: tel/mailto/website links keep native behavior (openModal
+            // would have killed their hrefs), the booking button closes + logs.
+            const msgEl = document.getElementById('modal-message');
+            msgEl.querySelectorAll('a').forEach(a => { a.onclick = null; });
+            const bookBtn = msgEl.querySelector('button');
+            if (bookBtn) {
+                bookBtn.onclick = () => {
+                    closeModal();
+                    addLog(`Booking signal transmitted to ${hotel.name}. Awaiting confirmation from the property node.`);
+                };
+            }
+        }
+
         // --- COMMUNITY INTELLIGENCE DATA (SMART MAP LAYER) ---
         // Since this is a static demo, we simulate the crowd-sourced data with an active object.
         var COMMUNITY_DATA = {
@@ -2293,7 +2433,73 @@
 
         function quickQuery(text) {
             document.getElementById('co-pilot-input').value = text;
-            navCommand();
+            copilotAsk(text);
+        }
+
+        // --- COMMUNITY CHAT (local broadcast channel) ---
+        // Empty until a user posts — every signed-in user can transmit.
+        // Messages persist per browser in localStorage (demo backend).
+        function communityUserName() {
+            try {
+                const sess = JSON.parse(localStorage.getItem('zentryx_session') || 'null');
+                if (sess && sess.email) {
+                    const users = JSON.parse(localStorage.getItem('zentryx_users') || '[]');
+                    const u = users.find(x => x.email === sess.email);
+                    if (u) return u.name;
+                }
+            } catch (e) { /* ignore */ }
+            return 'Commander';
+        }
+
+        function getCommunityMessages() {
+            try {
+                return JSON.parse(localStorage.getItem('zentryx_community_chat') || '[]');
+            } catch (e) { return []; }
+        }
+
+        function renderCommunityChat() {
+            const box = document.getElementById('community-chat-messages');
+            if (!box) return;
+            const msgs = getCommunityMessages();
+            if (msgs.length === 0) {
+                box.innerHTML = '<div class="text-frontier-lime/80 text-[10px]"><span class="text-frontier-lime font-black mr-2">></span> Network channel open. No transmissions yet.</div>';
+                return;
+            }
+            box.innerHTML = msgs.map(m => `
+                <div class="flex gap-3 ${m.self ? 'flex-row-reverse' : ''}">
+                    <div class="w-7 h-7 rounded-full bg-frontier-indigo/10 border border-frontier-indigo/30 flex items-center justify-center text-[8px] font-black text-frontier-indigo flex-shrink-0">${escapeHtml((m.name || '?').charAt(0).toUpperCase())}</div>
+                    <div class="flex-1 ${m.self ? 'text-right' : ''}">
+                        <div class="text-[8px] font-black uppercase tracking-widest text-frontier-lime mb-1">${escapeHtml(m.name)} <span class="text-frontier-text/50 normal-case">· ${escapeHtml(m.time)}</span></div>
+                        <div class="inline-block bg-frontier-navy/60 border ${m.self ? 'border-frontier-indigo/40' : 'border-frontier-indigo/10'} p-3 text-[11px] text-frontier-text text-left">${escapeHtml(m.text)}</div>
+                    </div>
+                </div>
+            `).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function openCommunityChat() {
+            switchDashView('feed');
+            const panel = document.getElementById('community-chat');
+            if (panel) panel.classList.remove('hidden');
+            renderCommunityChat();
+            scrollToSection('dashboard-section');
+        }
+
+        function sendCommunityMessage() {
+            const input = document.getElementById('community-chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            const msgs = getCommunityMessages();
+            msgs.push({
+                name: communityUserName(),
+                text: text,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                self: true
+            });
+            localStorage.setItem('zentryx_community_chat', JSON.stringify(msgs.slice(-100)));
+            renderCommunityChat();
+            addLog(`Community transmission sent: "${text.slice(0, 40)}"`);
         }
 
         function initCommunity() {
@@ -2301,6 +2507,7 @@
             renderThreads();
             renderStories();
             renderReputation();
+            renderCommunityChat();
             // Start signal pulses
             setInterval(spawnSignalBubble, 4000);
         }
@@ -2311,7 +2518,7 @@
             // weather even when GPS is denied or unavailable.
             const DEFAULT_COORDS = { latitude: 31.6340, longitude: 74.8723 };
 
-            async function loadWeather(latitude, longitude) {
+            async function loadWeather(latitude, longitude, isFallback = false) {
                 try {
                     // forecast_days=2 keeps enough hourly entries for the
                     // 12-hour modal even late in the evening (previously the
@@ -2347,8 +2554,11 @@
                         weatherDesc.innerText += " (Click for 12hr forecast)";
                     }
 
-                    // Add a small red dot to show the user's current physical location on the map
-                    if (typeof mainMap !== 'undefined' && mainMap) {
+                    // Add a small red dot for the user's REAL GPS position only.
+                    // When GPS is denied/unavailable we fall back to a default
+                    // city for weather — drawing a "Current Location" dot there
+                    // would wrongly claim the user is somewhere they're not.
+                    if (!isFallback && typeof mainMap !== 'undefined' && mainMap) {
                         const userDot = L.circleMarker([latitude, longitude], {
                             color: '#ff3366',
                             fillColor: '#ff3366',
@@ -2363,7 +2573,7 @@
                     console.error("Weather sync failed", err);
                     // One retry with the default city when the live fix fails
                     if (latitude !== DEFAULT_COORDS.latitude || longitude !== DEFAULT_COORDS.longitude) {
-                        await loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude);
+                        await loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude, true);
                     }
                 }
             }
@@ -2371,11 +2581,11 @@
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => loadWeather(position.coords.latitude, position.coords.longitude),
-                    () => loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude),
-                    { enableHighAccuracy: false, maximumAge: 600000, timeout: 8000 }
+                    () => loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude, true),
+                    { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 }
                 );
             } else {
-                loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude);
+                loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude, true);
             }
         }
 
@@ -2465,6 +2675,22 @@
             } else {
                 window.scrollTo(0, el.offsetTop);
             }
+        }
+
+        // --- NAV ACTIVE STATE ---
+        // Highlights whichever of Explore / Partners / Routes / Blog was
+        // tapped (lime + underline), clears the others back to muted text.
+        const NAV_KEYS = ['explore', 'partners', 'routes', 'blog'];
+        function setActiveNav(id) {
+            NAV_KEYS.forEach(key => {
+                const el = document.getElementById('nav-' + key);
+                if (!el) return;
+                if (key === id) {
+                    el.className = 'text-[#ceee93] border-b-2 border-[#ceee93] pb-1 cursor-pointer';
+                } else {
+                    el.className = 'text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer';
+                }
+            });
         }
 
         function navSearch() {
@@ -2789,7 +3015,10 @@
                                             rating: rating,
                                             status: Math.random() > 0.7 ? "Limited Space" : "Immediate Entry",
                                             img: `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1566073771259-6a8506099945' : '1551882547-ff43c69e5cf2'}?w=400&sig=${el.id}`,
-                                            address: el.tags['addr:street'] || el.tags['addr:place'] || 'Regional Sector'
+                                            address: el.tags['addr:street'] || el.tags['addr:place'] || el.tags['addr:city'] || 'Regional Sector',
+                                            phone: el.tags.phone || el.tags['contact:phone'] || el.tags['phone:mobile'],
+                                            email: el.tags.email || el.tags['contact:email'],
+                                            website: el.tags.website || el.tags['contact:website']
                                         });
                                     }
                                 });
@@ -2828,7 +3057,7 @@
             });
 
             grid.innerHTML = results.map(hotel => `
-                <div class="glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo group cursor-pointer transition-all p-3" onclick="openModal('Entity Reservation', 'Ready to secure a node at <b>${hotel.name}</b>?<br><br>Price: ${hotel.price}<br>Rating: ${hotel.rating} ★<br><br><button class=\'w-full bg-frontier-indigo text-white py-2 text-[10px] font-black uppercase hover:brightness-110\'>Transmit Booking Signal</button>')">
+                <div class="glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo group cursor-pointer transition-all p-3" onclick="openHotelDetails(${JSON.stringify(hotel).replace(/"/g, '&quot;')})">
                     <div class="h-28 relative overflow-hidden mb-3">
                         <img src="${hotel.img}" class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 group-hover:brightness-100 transition-all duration-700" alt="${hotel.name}">
                         <div class="absolute top-2 right-2 bg-frontier-deep/90 backdrop-blur px-2 py-1 text-[8px] font-bold ${hotel.rating >= 4 ? 'text-frontier-lime' : 'text-frontier-indigo'} border border-frontier-indigo/30">${hotel.rating} ★</div>
@@ -2886,6 +3115,21 @@
             document.getElementById('coord-bearing').innerText = getBearingLabel(parseFloat(lat), parseFloat(lon));
         }
 
+        // --- CO-PILOT: is this a question (→ AI) or a place (→ map)? ---
+        function looksLikeQuestion(q) {
+            if (/\?\s*$/.test(q)) return true;
+            if (/^(what|where|how|why|when|who|which|is|are|do|does|can|tell|recommend|suggest)\b/i.test(q)) return true;
+            return /\b(safe|cheap|nearby|best|recommend|budget|hidden|gems?|weather|route|stay|hotel|food|traffic|intel)\b/i.test(q);
+        }
+
+        async function copilotAsk(query) {
+            addLog('Consulting intelligence layer...');
+            document.getElementById('map-status').innerText = 'AI INTEL';
+            const answer = await queryAI(query);
+            addLog(answer);
+            return answer;
+        }
+
         async function navCommand() {
             const input = document.getElementById('co-pilot-input');
             const query = input.value.trim();
@@ -2893,6 +3137,13 @@
 
             addLog(query, false);
             input.value = '';
+
+            // Questions and travel-intel queries go to the AI engine
+            if (looksLikeQuestion(query)) {
+                await copilotAsk(query);
+                return;
+            }
+
             addLog('Searching for: ' + query + '...');
             document.getElementById('map-status').innerText = 'Searching...';
 
@@ -2939,8 +3190,8 @@
                     document.getElementById('map-status').innerText = display_name.split(',')[0];
 
                 } else {
-                    addLog('Address not found. Try being more specific (e.g. "Eiffel Tower, Paris" or "1 Infinite Loop, Cupertino").');
-                    document.getElementById('map-status').innerText = 'Address not found';
+                    addLog('Address not found. Trying intelligence layer...');
+                    await copilotAsk(query);
                 }
             } catch (err) {
                 addLog('Connection error. Please check your internet and try again.');
@@ -3144,7 +3395,144 @@
                 }
             }
         }
-        document.addEventListener("DOMContentLoaded", () => {
+
+            // --- AUTH (demo-grade, localStorage accounts) ---
+            // NOTE: client-side only — fine for a demo, NOT real security.
+            // Passwords are obfuscated with a simple hash, never sent anywhere.
+            function hashPass(s) {
+                let h = 5381;
+                for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+                return 'h' + h.toString(36);
+            }
+            function getUsers() { try { return JSON.parse(localStorage.getItem('zentryx_users') || '[]'); } catch (e) { return []; } }
+            function saveUsers(u) { localStorage.setItem('zentryx_users', JSON.stringify(u)); }
+            function getSession() { try { return JSON.parse(localStorage.getItem('zentryx_session') || 'null'); } catch (e) { return null; } }
+            function setSession(u) { localStorage.setItem('zentryx_session', JSON.stringify({ name: u.name, email: u.email })); }
+            function clearSession() { localStorage.removeItem('zentryx_session'); }
+
+            function switchAuthTab(mode) {
+                const isLogin = mode === 'login';
+                document.getElementById('auth-form-login').classList.toggle('hidden', !isLogin);
+                document.getElementById('auth-form-signup').classList.toggle('hidden', isLogin);
+                document.getElementById('auth-tab-login').className = isLogin
+                    ? 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-frontier-indigo text-frontier-deep'
+                    : 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-frontier-indigo hover:bg-frontier-indigo/10';
+                document.getElementById('auth-tab-signup').className = !isLogin
+                    ? 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-frontier-lime text-frontier-deep'
+                    : 'flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-frontier-lime hover:bg-frontier-lime/10';
+                document.getElementById('auth-error').classList.add('hidden');
+            }
+
+            function showAuthError(msg) {
+                const el = document.getElementById('auth-error');
+                el.innerText = msg;
+                el.classList.remove('hidden');
+            }
+
+            function authLogin() {
+                const email = document.getElementById('auth-login-email').value.trim().toLowerCase();
+                const pass = document.getElementById('auth-login-pass').value;
+                if (!email || !pass) return showAuthError('Enter your email and password.');
+                const u = getUsers().find(x => x.email === email && x.passHash === hashPass(pass));
+                if (!u) return showAuthError('Invalid credentials. Try again or create an account.');
+                setSession(u);
+                hideAuthOverlay();
+            }
+
+            function authSignup() {
+                const name = document.getElementById('auth-signup-name').value.trim();
+                const email = document.getElementById('auth-signup-email').value.trim().toLowerCase();
+                const pass = document.getElementById('auth-signup-pass').value;
+                if (name.length < 2) return showAuthError('Enter a display name.');
+                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showAuthError('Enter a valid email.');
+                if (pass.length < 6) return showAuthError('Password must be at least 6 characters.');
+                const users = getUsers();
+                if (users.some(x => x.email === email)) return showAuthError('An account with this email already exists. Sign in instead.');
+                const u = { name, email, passHash: hashPass(pass), joined: Date.now() };
+                users.push(u);
+                saveUsers(users);
+                setSession(u);
+                hideAuthOverlay();
+            }
+
+            function showAuthOverlay() {
+                const ov = document.getElementById('auth-overlay');
+                if (!ov) return;
+                ov.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                switchAuthTab('login');
+                setTimeout(() => { const f = document.getElementById('auth-login-email'); if (f) f.focus(); }, 100);
+            }
+
+            function hideAuthOverlay() {
+                document.getElementById('auth-overlay').classList.add('hidden');
+                document.body.style.overflow = '';
+                updateAuthAvatar();
+                const s = getSession();
+                if (s) addLog(`${s.name} authenticated. Welcome to the network.`);
+            }
+
+            function signOut() {
+                clearSession();
+                showAuthOverlay();
+            }
+
+            function updateAuthAvatar() {
+                const avatar = document.getElementById('nav-avatar');
+                if (!avatar) return;
+                const s = getSession();
+                if (s) {
+                    avatar.innerHTML = `<span class="w-full h-full flex items-center justify-center text-frontier-deep font-black text-sm bg-frontier-lime">${escapeHtml(s.name.charAt(0).toUpperCase())}</span>`;
+                } else {
+                    avatar.innerHTML = '<span class="material-symbols-outlined text-frontier-indigo text-sm">person</span>';
+                }
+            }
+
+            // --- SETTINGS ---
+            function openSettings() {
+                const s = getSession();
+                document.getElementById('settings-name').innerText = s ? s.name : '—';
+                document.getElementById('settings-email').innerText = s ? s.email : '—';
+                document.getElementById('settings-quota').innerText = `${aiQuotaRemaining()} / ${AI_HOURLY_LIMIT}`;
+                const m = document.getElementById('settings-modal');
+                m.classList.remove('hidden');
+                m.classList.add('flex');
+                setTimeout(() => {
+                    m.classList.remove('opacity-0');
+                    document.getElementById('settings-modal-content').classList.remove('scale-95');
+                }, 10);
+            }
+
+            function closeSettings() {
+                const m = document.getElementById('settings-modal');
+                m.classList.add('opacity-0');
+                document.getElementById('settings-modal-content').classList.add('scale-95');
+                setTimeout(() => {
+                    m.classList.add('hidden');
+                    m.classList.remove('flex');
+                }, 300);
+            }
+
+            function clearAllChat() {
+                window.aiChatHistory = [];
+                const cm = document.getElementById('chat-messages');
+                if (cm) cm.innerHTML = '';
+                const cl = document.getElementById('co-pilot-log');
+                if (cl) cl.innerHTML = '<div class="text-frontier-lime/80"><span class="text-frontier-lime font-black mr-2">></span> COMMANDER IDENTIFIED. SYSTEMS GREEN.</div>';
+                localStorage.removeItem('zentryx_community_chat');
+                renderCommunityChat();
+                addLog('Chat history purged.');
+                closeSettings();
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+            // 0. Auth gate — require sign-in before anything else
+            if (!getSession()) {
+                showAuthOverlay();
+            } else {
+                updateAuthAvatar();
+            }
+
             // 1. DYNAMICALLY ADD CLASSES ACROSS THE PAGE
 
             // Make Features Grid columns slide and reveal with delays (Removed sticky as it caused overlaps)
