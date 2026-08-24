@@ -1487,8 +1487,8 @@
             // Try to pull a place name out of the question
             let city = null;
             const patterns = [
-                /weather\s+(?:in|at|for|of)?\s*([a-z][a-z\s\-]{1,40}?)(?:\?|$|\.)/i,
-                /(?:in|at|for)\s+([a-z][a-z\s\-]{1,40}?)\s*weather/i,
+                /(?:weather|wheather)\s+(?:in|at|for|of)?\s*([a-z][a-z\s\-]{1,40}?)(?:\?|$|\.)/i,
+                /(?:in|at|for)\s+([a-z][a-z\s\-]{1,40}?)\s*(?:weather|wheather)/i,
                 /forecast\s+(?:for|in)?\s*([a-z][a-z\s\-]{1,40}?)(?:\?|$|\.)/i
             ];
             for (const p of patterns) {
@@ -1539,7 +1539,10 @@
             }
 
             // --- WEATHER (try to fetch real data for named cities; fallback to widget) ---
-            if (q.includes('weather') || q.includes('forecast') || q.includes('temperature') || q.includes('rain') || q.includes('humidity')) {
+            // Also catch the common "wheather" typo — without it the query
+            // falls through to q.includes('eat') in the food section and
+            // returns restaurant advice instead of the weather.
+            if (q.includes('weather') || q.includes('wheather') || q.includes('forecast') || q.includes('temperature') || /\brain\b/i.test(q) || q.includes('humidity') || q.includes('climate')) {
                 return fetchWeatherForCity(q);
             }
 
@@ -1628,8 +1631,8 @@
             if (q.includes('pythagor')) {
                 return `Pythagorean Theorem: In a right-angled triangle, a² + b² = c², where c is the hypotenuse (the longest side, opposite the right angle). Example: If a=3 and b=4, then c = √(9+16) = √25 = 5. This is called a "3-4-5 triangle." Named after Greek mathematician Pythagoras (570-495 BC).`;
             }
-            if (q.includes('pi') && (q.includes('math') || q.includes('value') || q.includes('what is'))) {
-                return `Pi (π) is the ratio of a circle's circumference to its diameter. Its value is approximately 3.14159265358979... It is an irrational number, meaning its decimal expansion never ends or repeats. Used in formulas: Circumference = 2πr, Area of circle = πr².`;
+            if (q.includes('pi') && (q.includes('math') || q.includes('value') || /\bpi\b/i.test(q))) {
+                if (/\bpi\b/i.test(q)) return `Pi (π) is the ratio of a circle's circumference to its diameter. Its value is approximately 3.14159265358979... It is an irrational number, meaning its decimal expansion never ends or repeats. Used in formulas: Circumference = 2πr, Area of circle = πr².`;
             }
 
             // --- TRAVEL (route-based) ---
@@ -1660,10 +1663,10 @@
             if (q.includes('train') || q.includes('rail') || q.includes('irctc')) {
                 return `Indian Railways: Book on irctc.co.in up to 120 days ahead. Tatkal opens at 10 AM (AC) / 11 AM (Sleeper). Fare for 500km: 350-2000 INR depending on class.`;
             }
-            if (q.includes('flight') || q.includes('fly') || q.includes('airplane')) {
+            if (q.includes('flight') || /\bfly\b/i.test(q) || q.includes('airplane')) {
                 return `Domestic flights in India: 3000-8000 INR for most routes. Book 1-2 months ahead on IndiGo, SpiceJet, or Air India. Book on Tuesdays for cheapest fares.`;
             }
-            if (q.includes('food') || q.includes('eat') || q.includes('restaurant')) {
+            if (q.includes('food') || q.includes('restaurant') || /\beat\b/i.test(q)) {
                 return `Food in India: Street food 30-100 INR, Local restaurant 100-300 INR, Fine dining 1000+ INR. A thali is the best value at 80-200 INR for a full meal.`;
             }
 
@@ -1710,15 +1713,18 @@
         // --- SERVER-SIDE AI ENGINE (OpenCode) ---
         // All AI requests go through /api/ai — API key is stored server-side on Vercel
 
-        async function queryAI(prompt) {
+        async function queryAI(prompt, skipLocal = false) {
             window.aiChatHistory = window.aiChatHistory || [];
 
             // --- Layer 3: zero-token local knowledge router FIRST ---
             // Weather, routes, budgets, GK, survival — all answered locally
-            // without spending a single API token.
-            const localAnswer = getLocalAnswer(prompt);
-            if (localAnswer !== null) {
-                return typeof localAnswer === 'string' ? localAnswer : await localAnswer;
+            // without spending a single API token. (skipped when the wrapper
+            // already routed the clean prompt and injected alert context.)
+            if (!skipLocal) {
+                const localAnswer = getLocalAnswer(prompt);
+                if (localAnswer !== null) {
+                    return typeof localAnswer === 'string' ? localAnswer : await localAnswer;
+                }
             }
 
             // --- Layer 2: per-browser AI quota (20 questions/hour) ---
@@ -2266,6 +2272,15 @@
         // --- INTELLIGENCE HOOK: AI Context (Travel-specific enrichment only) ---
         var originalQueryAI = queryAI;
         queryAI = async function (prompt) {
+            // Layer 3: route the CLEAN prompt through the local knowledge base
+            // FIRST. Injecting community alerts before this would trip the
+            // router's keyword matching — e.g. an alert mentioning "Rain"
+            // hijacks a "train from delhi" query into the weather branch.
+            const cleanLocal = getLocalAnswer(prompt);
+            if (cleanLocal !== null) {
+                return typeof cleanLocal === 'string' ? cleanLocal : await cleanLocal;
+            }
+
             // Only inject community context for clearly travel-related queries
             const travelKeywords = ['route', 'hotel', 'stay', 'shimla', 'delhi', 'road', 'cab', 'transport', 'travel', 'traffic', 'weather alert', 'fog'];
             const isTravelQuery = travelKeywords.some(k => prompt.toLowerCase().includes(k));
@@ -2276,7 +2291,9 @@
                 if (alerts) finalPrompt = `Local alerts: ${alerts}. User question: ${prompt}`;
             }
 
-            return await originalQueryAI(finalPrompt);
+            // skipLocal=true — the injected alert text must never re-enter the
+            // local router (its keywords like "Rain" would match the alerts).
+            return await originalQueryAI(finalPrompt, true);
         };
 
         function updateAvailability(hotelId) {
