@@ -1,5 +1,5 @@
-// Vercel Serverless Function — Gemini AI with Google Search Grounding
-// API key is stored as GEMINI_API_KEY environment variable on Vercel
+// Vercel Serverless Function — OpenCode AI chat completions
+// API key is stored as OPENCODE_API_KEY environment variable on Vercel
 
 const DEFAULT_SYSTEM = `You are Zentryx, an advanced general-purpose AI assistant embedded in a futuristic travel & intelligence dashboard. You can answer ANY question on ANY topic — science, math, coding, travel, history, geography, philosophy, current events, cooking, fitness, technology, business, and everything else. You are NOT limited to travel topics.
 
@@ -72,7 +72,7 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: 'AI service is not configured. Please contact the site owner.' });
     }
 
-    // Map Gemini history format to OpenAI messages format
+    // Map history format to OpenAI messages format
     const messages = [];
 
     // System instruction
@@ -116,7 +116,7 @@ module.exports = async function handler(req, res) {
             },
             signal: controller.signal,
             body: JSON.stringify({
-                model: 'deepseek-v4-flash-free',
+                model: 'laguna-s-2.1-free',
                 messages: messages,
                 temperature: 0.7,
                 max_tokens: 2048

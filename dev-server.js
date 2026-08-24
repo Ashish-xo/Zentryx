@@ -107,6 +107,6 @@ server.listen(PORT, () => {
     console.log(`\n================ ZENTRYX DEV SERVER ================`);
     console.log(`Frontend URL: http://localhost:${PORT}/`);
     console.log(`Backend API : http://localhost:${PORT}/api/ai`);
-    console.log(`Connected To: OpenCode DeepSeek v4 Flash`);
+    console.log(`Connected To: OpenCode AI (laguna-s-2.1)`);
     console.log(`====================================================\n`);
 });

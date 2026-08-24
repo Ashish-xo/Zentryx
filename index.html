@@ -898,7 +898,7 @@
                     <div
                         class="bg-[#11192e]/80 border border-frontier-indigo/20 rounded-sm p-3 text-frontier-text shadow-lg">
                         <p class="text-[13px] leading-relaxed">Hi! I'm Zentryx AI — your general-purpose assistant
-                            powered by OpenCode DeepSeek v4. Tag <span class="text-frontier-lime font-bold">@ai</span>
+                            powered by OpenCode AI. Tag <span class="text-frontier-lime font-bold">@ai</span>
                             and ask me <strong>anything</strong> — travel costs, science, coding, math, history, current
                             events, or any topic.
                         </p>
@@ -1202,7 +1202,7 @@
             try {
                 let text = null;
 
-                // Try OpenCode DeepSeek API first
+                // Try OpenCode AI API first
                 text = await queryBudgetAI(prompt);
 
                 // If API failed, use offline estimation
@@ -1241,7 +1241,9 @@
                 ];
 
                 tiers.forEach(t => {
-                    const d = data[t.id];
+                    const d = data[t.id] || {};
+                    // Guard against a model returning slightly different keys
+                    const v = (x) => (x === undefined || x === null || x === '' ? 'N/A' : x);
                     if (d) {
                         grid.innerHTML += `
                 <div class="border border-${t.hex} ${t.bg} p-6 relative group transition-transform duration-300">
@@ -1252,15 +1254,15 @@
                     <div class="text-[10px] text-frontier-text uppercase tracking-widest mb-6">${t.label} Tier</div>
                     
                     <div class="space-y-4 mb-8">
-                        <div><div class="text-[9px] text-frontier-text uppercase">Local Travel</div><div class="font-bold text-white text-sm">${d.travel_cost}</div></div>
-                        <div><div class="text-[9px] text-frontier-text uppercase">Hotel (${d.hotel_rating})</div><div class="font-bold text-white text-sm">${d.hotel_cost}</div></div>
-                        <div><div class="text-[9px] text-frontier-text uppercase">Tickets Fee</div><div class="font-bold text-white text-sm">${d.tickets}</div></div>
-                        <div><div class="text-[9px] text-frontier-text uppercase">Food Expenses</div><div class="font-bold text-white text-sm">${d.food}</div></div>
+                        <div><div class="text-[9px] text-frontier-text uppercase">Local Travel</div><div class="font-bold text-white text-sm">${v(d.travel_cost)}</div></div>
+                        <div><div class="text-[9px] text-frontier-text uppercase">Hotel (${v(d.hotel_rating)})</div><div class="font-bold text-white text-sm">${v(d.hotel_cost)}</div></div>
+                        <div><div class="text-[9px] text-frontier-text uppercase">Tickets Fee</div><div class="font-bold text-white text-sm">${v(d.tickets)}</div></div>
+                        <div><div class="text-[9px] text-frontier-text uppercase">Food Expenses</div><div class="font-bold text-white text-sm">${v(d.food)}</div></div>
                     </div>
                     
                     <div class="border-t border-${t.hex} pt-4">
                         <div class="text-[10px] text-frontier-text uppercase tracking-widest mb-1">Total Est.</div>
-                        <div class="font-headline font-black text-2xl" style="color: ${t.color}">${d.total}</div>
+                        <div class="font-headline font-black text-2xl" style="color: ${t.color}">${v(d.total)}</div>
                     </div>
                 </div>`;
                     }
@@ -1448,7 +1450,7 @@
 
             // --- GREETINGS ---
             if (/^\s*@?ai\s*$|\b(hello|hi|hey|hii|sup)\b/i.test(q) && q.length < 25) {
-                return `Hello! I'm Zentryx AI. Tag @ai before your message to ask me anything — travel, science, math, coding, history, or any topic. Powered by OpenCode DeepSeek v4.`;
+                return `Hello! I'm Zentryx AI. Tag @ai before your message to ask me anything — travel, science, math, coding, history, or any topic. Powered by OpenCode AI.`;
             }
 
             // --- WEATHER (try to fetch real data for named cities; fallback to widget) ---
@@ -1583,7 +1585,7 @@
             return `I couldn't reach the AI server right now — this might be a temporary network issue. Please try again in a moment. In the meantime, I can answer questions about: travel routes, survival skills, directions, geography, science, history, and math.`;
         }
 
-        // --- SERVER-SIDE AI ENGINE (OpenCode DeepSeek v4) ---
+        // --- SERVER-SIDE AI ENGINE (OpenCode) ---
         // All AI requests go through /api/ai — API key is stored server-side on Vercel
 
         async function queryAI(prompt) {
@@ -1653,7 +1655,7 @@
                         },
                         signal: controller.signal,
                         body: JSON.stringify({
-                            model: 'deepseek-v4-flash-free',
+                            model: 'laguna-s-2.1-free',
                             messages: messages,
                             temperature: 0.7,
                             max_tokens: 2048
@@ -1758,7 +1760,7 @@
                             'Authorization': `Bearer ${fallbackApiKey}`
                         },
                         body: JSON.stringify({
-                            model: 'deepseek-v4-flash-free',
+                            model: 'laguna-s-2.1-free',
                             messages: [
                                 { role: 'system', content: 'You are a travel budget calculator. Return ONLY raw JSON with no markdown, no backticks, no explanation. The JSON must have exactly 3 keys: cheapest, moderate, expensive. Each key must be an object with: travel_cost, hotel_rating, hotel_cost, tickets, food, total.' },
                                 { role: 'user', content: prompt }
@@ -2177,6 +2179,11 @@
 
         function toggleHeatmap() {
             if (!heatmapLayer) initHeatmap();
+            // If the heat plugin failed to load (CDN down), don't crash
+            if (!heatmapLayer) {
+                addLog("Heatmap engine unavailable — activity layer offline.");
+                return;
+            }
             const btn = document.getElementById('btn-heatmap');
             if (mainMap.hasLayer(heatmapLayer)) {
                 mainMap.removeLayer(heatmapLayer);
@@ -2221,53 +2228,75 @@
         let hourlyForecastData = null;
 
         async function initWeather() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    try {
-                        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode`);
-                        const data = await response.json();
+            // Default home base (Amritsar) so the widget always shows real
+            // weather even when GPS is denied or unavailable.
+            const DEFAULT_COORDS = { latitude: 31.6340, longitude: 74.8723 };
 
-                        // Store hourly data for the interactive modal
-                        hourlyForecastData = data.hourly;
+            async function loadWeather(latitude, longitude) {
+                try {
+                    // forecast_days=2 keeps enough hourly entries for the
+                    // 12-hour modal even late in the evening (previously the
+                    // array ran out and cards rendered "undefined°").
+                    const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&forecast_days=2&hourly=temperature_2m,weathercode`);
+                    if (!response.ok) throw new Error('Weather API ' + response.status);
+                    const data = await response.json();
+                    if (!data.current_weather) throw new Error('No current weather data');
 
-                        const { temperature, weathercode } = data.current_weather;
+                    // Store hourly data for the interactive modal
+                    hourlyForecastData = data.hourly;
 
-                        const tempEl = document.getElementById('weather-temp');
-                        if (tempEl) tempEl.innerText = `${Math.round(temperature)}°C`;
+                    const { temperature, weathercode } = data.current_weather;
 
-                        // Also update the compact map HUD (renamed IDs, no dupes)
-                        const mapTemp = document.getElementById('map-weather-temp');
-                        if (mapTemp) mapTemp.innerText = `${Math.round(temperature)}°`;
-                        const mapIcon = document.getElementById('map-weather-icon');
-                        if (mapIcon) {
-                            mapIcon.innerText = weathercode <= 3 ? 'sunny' : (weathercode >= 61 ? 'rainy' : 'cloudy');
-                        }
+                    const tempEl = document.getElementById('weather-temp');
+                    if (tempEl) tempEl.innerText = `${Math.round(temperature)}°C`;
 
-                        // Simple weather code to icon mapping
-                        const weatherDesc = document.getElementById('weather-desc');
-                        const weatherIcon = document.getElementById('weather-icon');
-
-                        updateWeatherUI(weathercode, weatherIcon, weatherDesc);
-
-                        document.getElementById('weather-desc').innerText += " (Click for 12hr forecast)";
-
-                        // Add a small red dot to show the user's current physical location on the map
-                        if (typeof mainMap !== 'undefined' && mainMap) {
-                            const userDot = L.circleMarker([latitude, longitude], {
-                                color: '#ff3366',
-                                fillColor: '#ff3366',
-                                fillOpacity: 1,
-                                radius: 4,
-                                weight: 2
-                            }).addTo(mainMap);
-                            userDot.bindPopup('<div style="font-family:\'Space Grotesk\',sans-serif;font-size:10px;font-weight:bold;color:#ff3366;text-align:center;">Current Location</div>', { className: 'custom-popup' });
-                        }
-
-                    } catch (err) {
-                        console.error("Weather sync failed", err);
+                    // Also update the compact map HUD (renamed IDs, no dupes)
+                    const mapTemp = document.getElementById('map-weather-temp');
+                    if (mapTemp) mapTemp.innerText = `${Math.round(temperature)}°`;
+                    const mapIcon = document.getElementById('map-weather-icon');
+                    if (mapIcon) {
+                        mapIcon.innerText = weathercode <= 3 ? 'sunny' : (weathercode >= 61 ? 'rainy' : 'cloudy');
                     }
-                });
+
+                    // Simple weather code to icon mapping
+                    const weatherDesc = document.getElementById('weather-desc');
+                    const weatherIcon = document.getElementById('weather-icon');
+
+                    updateWeatherUI(weathercode, weatherIcon, weatherDesc);
+
+                    if (weatherDesc && !weatherDesc.innerText.includes('Click for 12hr forecast')) {
+                        weatherDesc.innerText += " (Click for 12hr forecast)";
+                    }
+
+                    // Add a small red dot to show the user's current physical location on the map
+                    if (typeof mainMap !== 'undefined' && mainMap) {
+                        const userDot = L.circleMarker([latitude, longitude], {
+                            color: '#ff3366',
+                            fillColor: '#ff3366',
+                            fillOpacity: 1,
+                            radius: 4,
+                            weight: 2
+                        }).addTo(mainMap);
+                        userDot.bindPopup('<div style="font-family:\'Space Grotesk\',sans-serif;font-size:10px;font-weight:bold;color:#ff3366;text-align:center;">Current Location</div>', { className: 'custom-popup' });
+                    }
+
+                } catch (err) {
+                    console.error("Weather sync failed", err);
+                    // One retry with the default city when the live fix fails
+                    if (latitude !== DEFAULT_COORDS.latitude || longitude !== DEFAULT_COORDS.longitude) {
+                        await loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude);
+                    }
+                }
+            }
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => loadWeather(position.coords.latitude, position.coords.longitude),
+                    () => loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude),
+                    { enableHighAccuracy: false, maximumAge: 600000, timeout: 8000 }
+                );
+            } else {
+                loadWeather(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude);
             }
         }
 
@@ -2298,8 +2327,8 @@
             // Render next 12 hours as DOM elements
             for (let i = 0; i < 12; i++) {
                 const hour = (currentHour + i) % 24;
-                const temp = Math.round(hourlyForecastData.temperature_2m[currentHour + i]);
-                const code = hourlyForecastData.weathercode[currentHour + i];
+                const temp = Math.round(hourlyForecastData.temperature_2m[currentHour + i] ?? 0);
+                const code = hourlyForecastData.weathercode[currentHour + i] ?? 0;
 
                 // Map WMO weather code to a readable label and icon
                 let icon = 'cloud';
@@ -2723,11 +2752,20 @@
             `).join('');
         }
 
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function addLog(text, isAI = true) {
             const log = document.getElementById('co-pilot-log');
             const div = document.createElement('div');
             div.className = isAI ? "text-frontier-indigo" : "text-white/60";
-            div.innerHTML = `<span class="text-frontier-lime font-bold">${isAI ? '>' : ''}</span> ${text}`;
+            div.innerHTML = `<span class="text-frontier-lime font-bold">${isAI ? '>' : ''}</span> ${escapeHtml(text).replace(/\n/g, '<br>')}`;
             log.appendChild(div);
             log.scrollTop = log.scrollHeight;
         }
@@ -2921,7 +2959,7 @@
             msgDiv.innerHTML = `
         ${iconHTML}
         <div class="${bubbleClass}">
-            <p class="text-[13px] leading-relaxed">${text}</p>
+            <p class="text-[13px] leading-relaxed">${escapeHtml(text).replace(/\n/g, '<br>')}</p>
         </div>
     `;
 
@@ -2963,23 +3001,39 @@
                         'sqrt': (n) => Math.sqrt(n)
                     };
 
-                    const funcMatch = lowerText.match(/(log|ln|sin|cos|tan|sqrt)\s*\(?(\d+(?:\.\d+)?)\)?/i);
+                    // Word-boundary guards stop false positives like "stan 5",
+                    // "mountain 7", or dates like "12/3/2024".
+                    const funcMatch = lowerText.match(/(^|[^a-z])(log|ln|sin|cos|tan|sqrt)\s*\(?\s*(\d+(?:\.\d+)?)\s*\)?/i);
 
-                    if (mathMatch) {
+                    let mathResult = null;
+                    let mathLabel = '';
+
+                    if (mathMatch && !/[\d.]/.test(lowerText[mathMatch.index - 1] || '') && !/[\d/]/.test(lowerText[mathMatch.index + mathMatch[0].length] || '')) {
                         const num1 = parseFloat(mathMatch[1]);
                         const operator = mathMatch[2];
                         const num2 = parseFloat(mathMatch[3]);
-                        let result = 0;
+                        let result = NaN;
                         if (operator === '+') result = num1 + num2;
                         if (operator === '-') result = num1 - num2;
                         if (operator === '*') result = num1 * num2;
-                        if (operator === '/') result = num1 / num2;
-                        finalResponse = `CALCULATION: ${num1} ${operator} ${num2} = ${result}`;
+                        if (operator === '/' && num2 !== 0) result = num1 / num2;
+                        if (Number.isFinite(result)) {
+                            mathResult = result;
+                            mathLabel = `${num1} ${operator} ${num2}`;
+                        }
                     } else if (funcMatch) {
-                        const func = funcMatch[1].toLowerCase();
-                        const num = parseFloat(funcMatch[2]);
+                        const func = funcMatch[2].toLowerCase();
+                        const num = parseFloat(funcMatch[3]);
                         const result = mathShortcuts[func](num);
-                        finalResponse = `CALCULATION: ${func}(${num}) = ${result.toFixed(4)}`;
+                        if (Number.isFinite(result)) {
+                            mathResult = result;
+                            mathLabel = `${func}(${num})`;
+                        }
+                    }
+
+                    if (mathResult !== null) {
+                        const display = Number.isInteger(mathResult) ? mathResult : mathResult.toFixed(4);
+                        finalResponse = `CALCULATION: ${mathLabel} = ${display}`;
                     } else {
                         const extractedPrompt = text.replace(/@ai/ig, '').trim();
                         finalResponse = await queryAI(extractedPrompt);
