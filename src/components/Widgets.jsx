@@ -82,7 +82,7 @@ export function ChatWidget() {
 }
 
 export function FAB() {
-  const { state, setChatOpen, openModal, setDashView, scrollToSection } = useApp();
+  const { state, setChatOpen, openModal, setDashView, setAskModal, setBudgetModal, scrollToSection } = useApp();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -92,6 +92,14 @@ export function FAB() {
           <button onClick={() => { setExpanded(false); setChatOpen(true); }}
             className="flex items-center gap-2 bg-frontier-lime text-frontier-deep px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg">
             <span className="material-symbols-outlined text-sm">chat</span> AI Chat
+          </button>
+          <button onClick={() => { setExpanded(false); setAskModal(true); }}
+            className="flex items-center gap-2 bg-frontier-indigo text-frontier-deep px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg">
+            <span className="material-symbols-outlined text-sm">psychology_alt</span> Ask AI
+          </button>
+          <button onClick={() => { setExpanded(false); setBudgetModal(true); }}
+            className="flex items-center gap-2 bg-frontier-lime text-frontier-deep px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg">
+            <span className="material-symbols-outlined text-sm">account_balance_wallet</span> Budget Planner
           </button>
           <button onClick={() => { setExpanded(false); openModal('Co-Pilot', 'Co-pilot active. Ask me anything about your trip.'); }}
             className="flex items-center gap-2 bg-frontier-indigo text-frontier-deep px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg">
