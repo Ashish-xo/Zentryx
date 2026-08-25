@@ -20,13 +20,31 @@ function MapView() {
   const [coord, setCoord] = useState(null);
   const [mapScrollOn, setMapScrollOn] = useState(false);
 
-  // Toggle map wheel-zoom (locked = page scrolls over the map)
+  // Toggle map interaction — works for BOTH pointer (mouse wheel) and touch.
+  // Locked  = page scrolls normally over the map (wheel AND touch drag disabled)
+  // Unlocked = map captures input for zoom + pan (wheel, touch, double-click)
   const toggleMapScroll = () => {
     if (!leafletMap.current) return;
     const next = !mapScrollOn;
     setMapScrollOn(next);
-    if (next) leafletMap.current.scrollWheelZoom.enable();
-    else leafletMap.current.scrollWheelZoom.disable();
+    const map = leafletMap.current;
+    if (next) {
+      map.scrollWheelZoom.enable();
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+      map.getContainer().style.setProperty('cursor', 'grab', 'important');
+    } else {
+      map.scrollWheelZoom.disable();
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+      map.getContainer().style.setProperty('cursor', 'default', 'important');
+    }
   };
 
   // Init map once
@@ -37,14 +55,25 @@ function MapView() {
       zoom: 14,
       zoomControl: false,
       attributionControl: true,
-      // Page scrolls over the map by default; user unlocks with the toggle.
-      scrollWheelZoom: false
+      // Starts LOCKED for both pointer and touch: the page scrolls normally
+      // over the map until the user taps the toggle to enable interaction.
+      scrollWheelZoom: false,
+      dragging: false,
+      touchZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false
     });
     Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
     leafletMap.current = map;
+
+    // Map starts locked — enforce a "default" cursor so the grab-hand doesn't
+    // suggest the map is pannable before the user unlocks it.
+    map.getContainer().style.cursor = 'default';
+    map.getContainer().style.setProperty('cursor', 'default', 'important');
 
     // Community markers
     community.users.forEach(u => {
