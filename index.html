@@ -337,21 +337,12 @@
     </nav>
     <!-- Hero Section -->
     <section class="relative min-h-screen flex items-center pt-20 overflow-hidden">
-        <div id="hero-images"
-            class="absolute inset-0 z-0 flex gap-1 p-2 opacity-100">    
-            <div class="flex-1 h-full overflow-hidden border-x border-frontier-indigo/10">
-                <img class="w-full h-full object-cover"
-                    data-alt="Dramatic aerial shot of winding coastal roads during sunset"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBI4485OA74LlKostg2DhTj6ItkmVgYOBxq_iK7HsT57D0ov2RbYU4PNtHjWWZF4wstGy2SZz1uJojwJ7166nAaXr1SKntgCgF1VQ_tmgQYdyhrZogvTDxzkJ6tVNXMfoI4poRrbsf5QnACVslhmN05ZBOLAsTnu7tItYgtUI5zXYPFUPtUbH85bHltBHCc6gPClq8CBOTDwPbLstRkjiArIcpjRytw9AJfjbzexXra3g17nwMXZCZ56loUoQa5vm8CdOyT2CmQn7Yu" />
-            </div>
-            <div class="flex-1 h-full overflow-hidden border-x border-frontier-indigo/10">
-                <img class="w-full h-full object-cover" data-alt="Breathtaking mountain peaks"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTVlt0ZUvVVMU9LP6dZaZw-UuFElV9jtXV67Od3B39xvgC5TufMth0uBCUsH6s0nGzYROFt100PjdHjoXCZfIC27P4HclqVT-_HLJMlp3vvUDoB7IO1lgwdK9y8_av9891vXSh0qovi4WjjMgcvuV_A9ntw1LoeFeGPNZI4Gpsmwk88h83yzgptVhiws2oEcihPaX623ZLnbXswwRYxzQE4pj1Wfh4LrWah9hA3wIbG_WIgnkoK2If-XwylR2qsnPWQbODyGpC0upv" />
-            </div>
-            <div class="flex-1 h-full overflow-hidden border-x border-frontier-indigo/10">
-                <img class="w-full h-full object-cover" data-alt="Lush tropical rainforest"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT1gB4L_1yEYrDyjs4qU49TfKIOlBK9n2WXXYqPP3_7GO9AlHic5diQL8X5-y8eMLou6WIKEdUy7Qs_FWAuogtvhyRgcxrwHlPPw3mYEkXS2dCmUuf84dCMFet12W2xZZ3vLl3OO1gSV8imQJnHC45BhrMzHt_fYT12cz8OkzQA3okGqG1XLmICDz3OPCDqPzfXCORiUGLnUJeep6kc60Sz1G6Sp6j5deeKbP-AWDMuuWabO9_QFG-IJmowwy6td2vbAGx3NwfQNDm" />
-            </div>
+        <div id="hero-images" class="absolute inset-0 z-0">
+            <img class="w-full h-full object-cover" loading="eager"
+                alt="Scenic travel destination"
+                src="/assets/hero-scenery.jpg" />
+            <!-- Gentle bottom fade into the next section (keeps image crisp) -->
+            <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(4,8,22,0.15) 0%, rgba(4,8,22,0) 40%, rgba(4,8,22,0.55) 85%, #040816 100%);"></div>
         </div>
         <!-- Tech HUD Elements -->
         <div class="absolute inset-0 z-5 pointer-events-none border-[1px] border-frontier-indigo/10 m-8 rounded-sm">
@@ -4044,15 +4035,11 @@
 
                 const delta = Math.abs(targetScrollY - currentScrollY);
 
-                // Hero Image Parallax (Moving vertically + scaling down for a zoom-out effect)
-                if (heroImageNodes.length >= 3) {
-                    const scale1 = Math.max(1.3 - currentScrollY * 0.0005, 1.0);
-                    const scale2 = Math.max(1.2 - currentScrollY * 0.0003, 1.0);
-                    const scale3 = Math.max(1.4 - currentScrollY * 0.0006, 1.0);
-
-                    heroImageNodes[0].style.transform = `scale(${scale1}) translateY(${currentScrollY * 0.15}px)`;
-                    heroImageNodes[1].style.transform = `scale(${scale2}) translateY(${currentScrollY * 0.05}px)`;
-                    heroImageNodes[2].style.transform = `scale(${scale3}) translateY(${currentScrollY * 0.25}px)`;
+                // Hero Image Parallax — single scenery image: slow zoom-out
+                // + vertical drift as the user scrolls (Ken Burns feel).
+                if (heroImageNodes.length >= 1) {
+                    const scale = Math.max(1.25 - currentScrollY * 0.0004, 1.0);
+                    heroImageNodes[0].style.transform = `scale(${scale}) translateY(${currentScrollY * 0.18}px)`;
                 }
 
                 // Hero images stay crisp and vivid; a gentle desaturate to
