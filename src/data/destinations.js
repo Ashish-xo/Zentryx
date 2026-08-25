@@ -1,0 +1,23 @@
+export default {
+            amritsar: { lat: 31.6340, lon: 74.8723 },
+            shimla: { lat: 31.1048, lon: 77.1734 },
+            delhi: { lat: 28.7041, lon: 77.1025 },
+            'new delhi': { lat: 28.6139, lon: 77.2090 },
+            mumbai: { lat: 19.0760, lon: 72.8777 },
+            goa: { lat: 15.2993, lon: 74.1240 },
+            panaji: { lat: 15.4909, lon: 73.8278 },
+            jaipur: { lat: 26.9124, lon: 75.7873 },
+            udaipur: { lat: 24.5854, lon: 73.7125 },
+            manali: { lat: 32.2396, lon: 77.1887 },
+            kasol: { lat: 32.0103, lon: 77.3150 },
+            bangalore: { lat: 12.9716, lon: 77.5946 },
+            chennai: { lat: 13.0827, lon: 80.2707 },
+            kolkata: { lat: 22.5726, lon: 88.3639 },
+            darjeeling: { lat: 27.0410, lon: 88.2663 },
+            kochi: { lat: 9.9312, lon: 76.2673 },
+            agra: { lat: 27.1767, lon: 78.0081 },
+            varanasi: { lat: 25.3176, lon: 82.9739 },
+            leh: { lat: 34.1526, lon: 77.5771 },
+            ladakh: { lat: 34.1526, lon: 77.5771 },
+            rishikesh: { lat: 30.0869, lon: 78.2676 }
+        };

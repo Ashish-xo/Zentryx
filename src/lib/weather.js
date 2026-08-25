@@ -1,0 +1,54 @@
+// Weather services — ported from original
+import weatherCodes from '../data/weatherCodes';
+
+const DEFAULT_COORDS = { lat: 31.6340, lon: 74.8723, label: 'Amritsar (GPS off)' };
+
+export async function fetchWeatherForCity(question) {
+  const q = question.toLowerCase();
+  const cityMap = {
+    amritsar: { name: 'Amritsar', lat: 31.6340, lon: 74.8723 },
+    shimla: { name: 'Shimla', lat: 31.1048, lon: 77.1734 },
+    delhi: { name: 'Delhi', lat: 28.6139, lon: 77.2090 },
+    mumbai: { name: 'Mumbai', lat: 19.0760, lon: 72.8777 },
+    goa: { name: 'Goa', lat: 15.2993, lon: 74.1240 },
+    jaipur: { name: 'Jaipur', lat: 26.9124, lon: 75.7873 },
+    manali: { name: 'Manali', lat: 32.2432, lon: 77.1892 },
+    kasol: { name: 'Kasol', lat: 32.0096, lon: 77.3151 },
+    udaipur: { name: 'Udaipur', lat: 24.5854, lon: 73.7125 },
+    varanasi: { name: 'Varanasi', lat: 25.3176, lon: 82.9739 },
+    kerala: { name: 'Kerala', lat: 10.8505, lon: 76.2711 },
+    chennai: { name: 'Chennai', lat: 13.0827, lon: 80.2707 },
+    bangalore: { name: 'Bangalore', lat: 12.9716, lon: 77.5946 }
+  };
+  for (const [key, city] of Object.entries(cityMap)) {
+    if (q.includes(key)) {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
+        const r = await fetch(url);
+        const d = await r.json();
+        const w = weatherCodes[d.current?.weather_code] || 'Unknown';
+        return `Current weather in ${city.name}: ${d.current?.temperature_2m ?? '--'}°C, ${w}. Humidity ${d.current?.relative_humidity_2m ?? '--'}%, Wind ${d.current?.wind_speed_10m ?? '--'} km/h.`;
+      } catch {
+        return `I couldn't fetch live weather for ${city.name} right now — check the Live Weather Card on the dashboard.`;
+      }
+    }
+  }
+  return `I can help you check the weather! Use the Live Weather Card on the dashboard to see current conditions for your location.`;
+}
+
+export async function fetchWeatherByCoords(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
+  const r = await fetch(url);
+  return r.json();
+}
+
+export async function getWeatherForCurrentArea() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(DEFAULT_COORDS);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Your location' }),
+      () => resolve(DEFAULT_COORDS),
+      { timeout: 6000 }
+    );
+  });
+}

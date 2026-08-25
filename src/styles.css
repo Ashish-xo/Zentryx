@@ -1,0 +1,205 @@
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #070d1f;
+            color: #a5aac2;
+            overflow-x: hidden;
+            overscroll-behavior-y: none;
+        }
+
+        /* Android/touch: kill tap delay + grey flash, enlarge hit area feel */
+        button,
+        a,
+        input,
+        [role="button"],
+        .cursor-pointer {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Small-screen readability: tiny 7-8px labels get a floor on phones */
+        @media (max-width: 480px) {
+            .text-\[7px\] {
+                font-size: 9px;
+            }
+            .text-\[8px\] {
+                font-size: 10px;
+            }
+        }
+
+        /* Dynamic viewport height — prevents URL-bar jump on Android */
+        @supports (min-height: 100dvh) {
+            .min-h-screen {
+                min-height: 100dvh;
+            }
+            .max-h-\[90vh\] {
+                max-height: 90dvh;
+            }
+        }
+
+        /* Respect users who disable motion */
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .glass-frontier {
+            backdrop-filter: blur(16px);
+            background: rgba(17, 25, 46, 0.7);
+            border: 1px solid rgba(163, 166, 255, 0.1);
+        }
+
+        .neon-glow-indigo {
+            box-shadow: 0 0 15px rgba(163, 166, 255, 0.3);
+        }
+
+        .neon-glow-lime {
+            box-shadow: 0 0 15px rgba(206, 238, 147, 0.3);
+        }
+
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(163, 166, 255, 0.05) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        .layer-btn.active {
+            background: rgba(206, 238, 147, 0.2);
+            border-color: #ceee93;
+            box-shadow: 0 0 10px rgba(206, 238, 147, 0.3);
+        }
+
+        .story-circle {
+            flex-shrink: 0;
+            width: 64px;
+            height: 64px;
+            padding: 2px;
+            border: 2px solid #a3a6ff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .story-circle:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .reputation-badge {
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            background: #ceee93;
+            color: #070d1f;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        /* Map Engine (Restored to Original Colors) */
+        .leaflet-container {
+            background: #f8f9fa !important;
+        }
+
+        .leaflet-tile-pane {
+            filter: none;
+            will-change: transform;
+        }
+
+        .leaflet-marker-icon {
+            filter: none;
+        }
+
+        /* Floating Signal Bubbles */
+        @keyframes signalRise {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        .signal-ping {
+            position: absolute;
+            border: 1px solid #ceee93;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1001;
+            animation: signalRise 3s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+        }
+
+        /* Dashboard Page Transitions */
+        .dashboard-view {
+            display: none;
+        }
+
+        .dashboard-view.view-active {
+            display: block;
+            animation: dashFade 0.6s cubic-bezier(0.2, 0, 0.2, 1);
+        }
+
+        @keyframes dashFade {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.99);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(163, 166, 255, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #ceee93;
+            border-radius: 2px;
+        }
+    
+/* Hero staggered reveal (after boot sequence) */
+.hero-reveal {
+  opacity: 0;
+  transform: translateY(34px);
+  filter: blur(10px);
+  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1), transform 1s cubic-bezier(0.22, 1, 0.36, 1), filter 1s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+.hero-reveal.hero-in {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
