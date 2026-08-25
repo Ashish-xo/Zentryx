@@ -24,8 +24,8 @@ const CSP = [
 ].join('; ');
 
 // --- .env loader (KEY=VALUE lines) ---
-// OPENCODE_API_KEY is read from the environment (Vercel injects it natively).
-// Locally, put it in a .env file next to this script — it stays out of git.
+// The BYOK backend does not need an owner API key — this loader only
+// exists for forward compatibility (e.g. future server-side settings).
 try {
     const envFile = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
     for (const line of envFile.split('\n')) {
