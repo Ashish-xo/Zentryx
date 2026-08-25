@@ -7,6 +7,26 @@
     <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
     <meta name="theme-color" content="#070d1f" />
     <title>Zentryx | Digital Frontier</title>
+    <meta name="description"
+        content="Zentryx — your smart travel companion. Real-time routes, live weather, curated stays, community chat and an AI co-pilot for every trip." />
+    <link rel="icon" type="image/png" href="/assets/favicon.png" />
+    <link rel="apple-touch-icon" href="/assets/favicon.png" />
+    <!-- Open Graph / social link previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Zentryx" />
+    <meta property="og:title" content="Zentryx | Digital Frontier" />
+    <meta property="og:description"
+        content="Your smart travel companion — real-time routes, live weather, curated stays, community chat and an AI co-pilot." />
+    <meta property="og:url" content="https://zentryx-ochre.vercel.app/" />
+    <meta property="og:image" content="https://zentryx-ochre.vercel.app/assets/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Zentryx | Digital Frontier" />
+    <meta name="twitter:description"
+        content="Your smart travel companion — real-time routes, live weather, curated stays, community chat and an AI co-pilot." />
+    <meta name="twitter:image" content="https://zentryx-ochre.vercel.app/assets/og-image.png" />
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <!-- Google Fonts: Space Grotesk for tech-forward feel -->
@@ -58,6 +78,7 @@
     <style>
         html {
             scroll-behavior: smooth;
+            overflow-x: hidden;
         }
 
         body {
@@ -858,7 +879,7 @@
             </blockquote>
             <div class="flex flex-col items-center">
                 <div class="w-16 h-16 rounded-full overflow-hidden mb-4 border border-frontier-indigo">
-                    <img alt="User profile"
+                    <img alt="User profile" loading="lazy"
                         src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUMMeZDpMj3Q-AKSRb7AyjfWIgckZz13QRxmUaaYKSDYRiLVCt1ewKKNR-yQzLzaawKqC6H_-8kyHWl-vXO6ahTMO4xJCBAKWqAG5uSObnwJ0Pzq1WUOGCZgBr51JeX7z_kX5J5Q7_fzdtIt031SLU2DsnvUP9aPINimJKcuAFfrLkwXFzDsiVGrd8GJWZjHwmEwBbqXDHPznIJpehnhnmKV7hYmUE0qeg7EMB37Sj3TloN1ywCBp92nzFn7wAe6NXaUT2t2bv1ow9" />
                 </div>
                 <h4 class="font-bold text-white uppercase tracking-widest">Marcus Thorne</h4>
@@ -1165,6 +1186,15 @@
             transform: translateX(100px);
             transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
             will-change: transform, opacity;
+        }
+
+        /* On phones, sideways slides would push cards past the viewport edge
+           and create horizontal scroll — slide them up instead. */
+        @media (max-width: 767px) {
+            .scroll-slide-left,
+            .scroll-slide-right {
+                transform: translateY(80px) scale(0.95);
+            }
         }
 
         .scroll-scale-up {
@@ -1974,7 +2004,7 @@
             const statusClass = hotel.status && String(hotel.status).includes('Entry') ? 'text-frontier-lime' : 'text-red-400';
 
             const msg = `
-                <img src="${escapeHtml(hotel.img)}" class="w-full h-40 object-cover mb-4 grayscale brightness-75" alt="${escapeHtml(hotel.name)}">
+                <img src="${escapeHtml(hotel.img)}" loading="lazy" class="w-full h-40 object-cover mb-4 grayscale brightness-75" alt="${escapeHtml(hotel.name)}">
                 <div class="flex justify-between items-start mb-3">
                     <div>
                         <div class="text-white font-black uppercase tracking-widest text-lg">${escapeHtml(hotel.name)}</div>
@@ -2094,7 +2124,7 @@
                         className: '',
                         html: `<div class="relative group cursor-pointer">
                     <div class="w-8 h-8 rounded-full border-2 border-frontier-indigo animate-pulse p-0.5 bg-frontier-navy overflow-hidden">
-                        <img src="https://i.pravatar.cc/150?u=${u.id}" class="rounded-full w-full h-full object-cover">
+                        <img src="https://i.pravatar.cc/150?u=${u.id}" loading="lazy" class="rounded-full w-full h-full object-cover">
                     </div>
                     <div class="absolute -bottom-1 -right-1 bg-frontier-lime w-2.5 h-2.5 rounded-full border border-frontier-deep"></div>
                 </div>`,
@@ -2221,7 +2251,7 @@
             strip.innerHTML = COMMUNITY_DATA.stories.map(s => `
         <div class="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group" onclick="viewStory('${jsStr(s.id)}')">
             <div class="story-circle ring-offset-2 ring-offset-frontier-deep">
-                <img src="${escapeHtml(s.img)}" class="w-full h-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all">
+                <img src="${escapeHtml(s.img)}" loading="lazy" class="w-full h-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all">
             </div>
             <span class="text-[7px] font-bold text-frontier-indigo uppercase tracking-widest">${escapeHtml(s.loc)}</span>
         </div>
@@ -2312,7 +2342,7 @@
         function viewStory(id) {
             const s = COMMUNITY_DATA.stories.find(x => x.id == id);
             if (s) {
-                openModal(`Intel Briefing: ${s.loc}`, `<img src="${escapeHtml(s.img)}" class="w-full h-64 object-cover mb-4 grayscale"> <p class="text-xs uppercase">Uploaded by ${escapeHtml(s.user)} • Verified via GeoSync.</p>`, true);
+                openModal(`Intel Briefing: ${s.loc}`, `<img src="${escapeHtml(s.img)}" loading="lazy" class="w-full h-64 object-cover mb-4 grayscale"> <p class="text-xs uppercase">Uploaded by ${escapeHtml(s.user)} • Verified via GeoSync.</p>`, true);
                 addLog(`Viewing briefing from ${s.loc}... Accessing satellite image.`);
             }
         }
@@ -3052,7 +3082,7 @@
             grid.innerHTML = results.map((hotel, i) => `
                 <div class="glass-frontier border border-frontier-indigo/10 hover:border-frontier-indigo group cursor-pointer transition-all p-3" onclick="openHotelDetailsByIndex(${i})">
                     <div class="h-28 relative overflow-hidden mb-3">
-                        <img src="${escapeHtml(hotel.img)}" class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 group-hover:brightness-100 transition-all duration-700" alt="${escapeHtml(hotel.name)}">
+                        <img src="${escapeHtml(hotel.img)}" loading="lazy" class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 group-hover:brightness-100 transition-all duration-700" alt="${escapeHtml(hotel.name)}">
                         <div class="absolute top-2 right-2 bg-frontier-deep/90 backdrop-blur px-2 py-1 text-[8px] font-bold ${hotel.rating >= 4 ? 'text-frontier-lime' : 'text-frontier-indigo'} border border-frontier-indigo/30">${escapeHtml(hotel.rating)} ★</div>
                     </div>
                     <div class="space-y-1">
@@ -3316,7 +3346,7 @@
 
             let iconHTML = '';
             if (sender === 'user') {
-                iconHTML = `<div class="w-6 h-6 rounded border border-frontier-indigo/50 flex-shrink-0 opacity-80 overflow-hidden"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ALzx01r-awRGOh7Dsk-AcsxbAfyhkqvV9r6NX4ha6YT6myF_FNHcqcqtsOTTDnEExCuYsI6vU6JzT8MqjQJrzsnUHuQY_Ysk42SvP0ZK4AkFSYXoVDMLVGa2gm1slf0mv6R3SVO4JoOlfj8tk73XmTZ4oOJjMZu9a4oTH4LQwkjh4peFxcfOtRAPPZhxfGCSEA2RUQqGvpP91S0b1M0HjSnGQRETZx2ez3GYq8RaEyYMc4ZyTGT9IKHB_8d2FrvioVC01p5PVxxx" class="w-full h-full object-cover"/></div>`;
+                iconHTML = `<div class="w-6 h-6 rounded border border-frontier-indigo/50 flex-shrink-0 opacity-80 overflow-hidden"><img loading="lazy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ALzx01r-awRGOh7Dsk-AcsxbAfyhkqvV9r6NX4ha6YT6myF_FNHcqcqtsOTTDnEExCuYsI6vU6JzT8MqjQJrzsnUHuQY_Ysk42SvP0ZK4AkFSYXoVDMLVGa2gm1slf0mv6R3SVO4JoOlfj8tk73XmTZ4oOJjMZu9a4oTH4LQwkjh4peFxcfOtRAPPZhxfGCSEA2RUQqGvpP91S0b1M0HjSnGQRETZx2ez3GYq8RaEyYMc4ZyTGT9IKHB_8d2FrvioVC01p5PVxxx" class="w-full h-full object-cover"/></div>`;
             } else {
                 iconHTML = `<span class="material-symbols-outlined text-frontier-lime mt-1 text-lg flex-shrink-0 backdrop-blur-md">smart_toy</span>`;
             }
