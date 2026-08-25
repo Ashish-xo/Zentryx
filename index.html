@@ -270,6 +270,13 @@
 </head>
 
 <body class="bg-frontier-deep text-frontier-text selection:bg-frontier-indigo/30">
+    <!-- Cinematic Boot Sequence -->
+    <div id="boot-overlay" aria-hidden="true">
+        <div class="boot-grid"></div>
+        <div class="boot-logo">ZENTRYX</div>
+        <div class="boot-line" id="boot-line">Establishing network link...</div>
+        <div class="boot-bar-wrap"><div class="boot-bar"></div></div>
+    </div>
     <!-- Auth gate — appears on first visit until sign-in -->
     <div id="auth-overlay" class="hidden fixed inset-0 z-[2000] bg-[#040816]/95 backdrop-blur-xl flex items-center justify-center p-4">
         <div class="w-full max-w-md glass-frontier border border-frontier-indigo/30 p-8" onclick="event.stopPropagation()">
@@ -353,21 +360,25 @@
             <div class="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-frontier-lime"></div>
             <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-frontier-lime"></div>
         </div>
+
+        <!-- Interactive particle network -->
+        <canvas id="hero-network"></canvas>
+
         <div class="relative z-10 max-w-7xl mx-auto px-6 w-full text-center">
             <div
-                class="inline-block mb-4 px-3 py-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-frontier-indigo text-xs font-bold tracking-[0.4em] uppercase rounded-full">
+                class="hero-reveal inline-block mb-4 px-3 py-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-frontier-indigo text-xs font-bold tracking-[0.4em] uppercase rounded-full">
                 Find Your Next Adventure
             </div>
             <h1
-                class="font-headline font-black text-4xl sm:text-6xl md:text-8xl text-white leading-none mb-6 tracking-tight uppercase">
+                class="hero-reveal font-headline font-black text-4xl sm:text-6xl md:text-8xl text-white leading-none mb-6 tracking-tight uppercase">
                 Travel with <span class="text-frontier-lime neon-glow-lime">Ease</span>
             </h1>
             <p
-                class="font-body text-lg md:text-xl text-frontier-text max-w-2xl mx-auto mb-12 tracking-wide uppercase font-light">
+                class="hero-reveal font-body text-lg md:text-xl text-frontier-text max-w-2xl mx-auto mb-12 tracking-wide uppercase font-light">
                 Experience the world with a smart travel companion that adapts to your unique preferences and keeps you
                 connected.
             </p>
-            <div class="flex flex-col md:flex-row gap-6 justify-center px-4 sm:px-0">
+            <div class="hero-reveal flex flex-col md:flex-row gap-6 justify-center px-4 sm:px-0">
                 <button onclick="openBudgetModal()"
                     class="bg-frontier-indigo text-frontier-deep px-6 py-3 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 neon-glow-indigo">
                     Start Planning
@@ -1200,6 +1211,106 @@
             opacity: 0;
             transform: scale(0.8);
             transition: all 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* ============ CINEMATIC BOOT SEQUENCE ============ */
+        #boot-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #040816;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        #boot-overlay.done {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #boot-overlay .boot-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            letter-spacing: 0.45em;
+            text-indent: 0.45em;
+            color: #ffffff;
+            text-shadow: 0 0 30px rgba(163, 166, 255, 0.8), 0 0 60px rgba(206, 238, 147, 0.4);
+            opacity: 0;
+            animation: bootLogoIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes bootLogoIn {
+            0% { opacity: 0; transform: scale(1.6) blur(12px); letter-spacing: 0.9em; }
+            60% { opacity: 1; }
+            100% { opacity: 1; transform: scale(1) blur(0); letter-spacing: 0.45em; }
+        }
+        #boot-overlay .boot-line {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 10px;
+            letter-spacing: 0.5em;
+            text-indent: 0.5em;
+            text-transform: uppercase;
+            color: #a3a6ff;
+            margin-top: 18px;
+            min-height: 16px;
+            opacity: 0;
+            animation: bootFadeIn 0.5s ease 0.5s forwards;
+        }
+        @keyframes bootFadeIn {
+            to { opacity: 1; }
+        }
+        #boot-overlay .boot-bar-wrap {
+            width: min(320px, 60vw);
+            height: 2px;
+            background: rgba(163, 166, 255, 0.15);
+            margin-top: 26px;
+            overflow: hidden;
+            opacity: 0;
+            animation: bootFadeIn 0.4s ease 0.7s forwards;
+        }
+        #boot-overlay .boot-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #a3a6ff, #ceee93);
+            box-shadow: 0 0 12px rgba(206, 238, 147, 0.7);
+            animation: bootProgress 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.7s forwards;
+        }
+        @keyframes bootProgress {
+            to { width: 100%; }
+        }
+        #boot-overlay .boot-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(163, 166, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(163, 166, 255, 0.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+        }
+
+        /* ============ HERO STAGGERED REVEAL ============ */
+        .hero-reveal {
+            opacity: 0;
+            transform: translateY(34px);
+            filter: blur(10px);
+            transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1), transform 1s cubic-bezier(0.22, 1, 0.36, 1), filter 1s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity, transform, filter;
+        }
+        .hero-reveal.hero-in {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+
+        /* ============ INTERACTIVE PARTICLE NETWORK ============ */
+        #hero-network {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.55;
         }
 
         .is-visible {
@@ -3646,6 +3757,161 @@
             // 0. Auth — no forced gate: visitors can browse freely.
             //    Sign-in stays available via the avatar (opens auth if logged out).
             updateAuthAvatar();
+
+            // 0.5 CINEMATIC BOOT SEQUENCE (plays once per session)
+            (function bootSequence() {
+                try {
+                    const boot = document.getElementById('boot-overlay');
+                    if (!boot) return;
+                    // Already seen this session → skip instantly
+                    if (sessionStorage.getItem('zentryx_booted')) {
+                        boot.classList.add('done');
+                        document.querySelectorAll('.hero-reveal').forEach(el => el.classList.add('hero-in'));
+                        return;
+                    }
+                    sessionStorage.setItem('zentryx_booted', '1');
+
+                    const lineEl = document.getElementById('boot-line');
+                    const bootLines = [
+                        'Establishing network link...',
+                        'Syncing travel grid...',
+                        'Calibrating compass...',
+                        'Access granted.'
+                    ];
+                    let lineIdx = 0;
+                    const lineTimer = setInterval(() => {
+                        lineIdx++;
+                        if (lineIdx < bootLines.length && lineEl) {
+                            lineEl.innerText = bootLines[lineIdx];
+                        }
+                    }, 450);
+
+                    // Reveal hero after boot completes (~2.4s)
+                    setTimeout(() => {
+                        boot.classList.add('done');
+                        clearInterval(lineTimer);
+                        // Staggered hero reveal
+                        const reveals = document.querySelectorAll('.hero-reveal');
+                        reveals.forEach((el, i) => {
+                            setTimeout(() => el.classList.add('hero-in'), 150 + i * 200);
+                        });
+                    }, 2400);
+
+                    // Safety: never trap the user behind the overlay
+                    setTimeout(() => {
+                        boot.classList.add('done');
+                        document.querySelectorAll('.hero-reveal').forEach(el => el.classList.add('hero-in'));
+                    }, 5000);
+                } catch (e) {
+                    console.warn('Boot sequence skipped:', e);
+                }
+            })();
+
+            // 0.6 INTERACTIVE PARTICLE NETWORK (hero constellation)
+            (function particleNetwork() {
+                const canvas = document.getElementById('hero-network');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                let W, H, particles = [];
+                const COUNT = 55;
+                const LINK_DIST = 130;
+                const MOUSE_RADIUS = 160;
+                let mouse = { x: -9999, y: -9999 };
+                let rafId = null;
+                const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                const resize = () => {
+                    const section = canvas.parentElement;
+                    W = canvas.width = section.clientWidth;
+                    H = canvas.height = section.clientHeight;
+                    init();
+                };
+                const init = () => {
+                    particles = [];
+                    for (let i = 0; i < COUNT; i++) {
+                        particles.push({
+                            x: Math.random() * W,
+                            y: Math.random() * H,
+                            vx: (Math.random() - 0.5) * 0.4,
+                            vy: (Math.random() - 0.5) * 0.4,
+                            r: Math.random() * 1.8 + 0.8
+                        });
+                    }
+                };
+                const step = () => {
+                    ctx.clearRect(0, 0, W, H);
+                    for (const p of particles) {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        if (p.x < 0 || p.x > W) p.vx *= -1;
+                        if (p.y < 0 || p.y > H) p.vy *= -1;
+                    }
+                    // Lines between close particles
+                    for (let i = 0; i < particles.length; i++) {
+                        for (let j = i + 1; j < particles.length; j++) {
+                            const a = particles[i], b = particles[j];
+                            const dx = a.x - b.x, dy = a.y - b.y;
+                            const dist = Math.hypot(dx, dy);
+                            if (dist < LINK_DIST) {
+                                const alpha = (1 - dist / LINK_DIST) * 0.35;
+                                ctx.strokeStyle = `rgba(163, 166, 255, ${alpha})`;
+                                ctx.lineWidth = 1;
+                                ctx.beginPath();
+                                ctx.moveTo(a.x, a.y);
+                                ctx.lineTo(b.x, b.y);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                    // Mouse/touch link
+                    for (const p of particles) {
+                        const dx = p.x - mouse.x, dy = p.y - mouse.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < MOUSE_RADIUS) {
+                            const alpha = (1 - dist / MOUSE_RADIUS) * 0.5;
+                            ctx.strokeStyle = `rgba(206, 238, 147, ${alpha})`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(mouse.x, mouse.y);
+                            ctx.stroke();
+                        }
+                    }
+                    // Dots
+                    for (const p of particles) {
+                        ctx.fillStyle = 'rgba(163, 166, 255, 0.8)';
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    rafId = requestAnimationFrame(step);
+                };
+
+                const onMove = (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    mouse.x = e.clientX - rect.left;
+                    mouse.y = e.clientY - rect.top;
+                };
+                const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+                resize();
+                if (!reduced) {
+                    rafId = requestAnimationFrame(step);
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('touchmove', onMove, { passive: true });
+                    window.addEventListener('mouseout', onLeave);
+                    window.addEventListener('resize', resize);
+                }
+                // Cleanup on page hide
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    } else if (!document.hidden && !rafId && !reduced) {
+                        rafId = requestAnimationFrame(step);
+                    }
+                });
+            })();
 
             // 1. DYNAMICALLY ADD CLASSES ACROSS THE PAGE
 
