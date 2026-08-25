@@ -307,7 +307,6 @@
     <!-- TopNavBar (Shared Component) -->
     <nav class="fixed top-0 w-full z-50 bg-[#070d1f]/70 backdrop-blur-xl shadow-[0_0_15px_rgba(163,166,255,0.1)] h-16">
         <div class="flex justify-between items-center px-4 sm:px-8 h-full w-full">
-            <div class="text-xl font-bold tracking-widest text-[#a3a6ff]">ZENTRYX</div>
             <div class="hidden md:flex items-center space-x-8 font-['Space_Grotesk'] tracking-tight text-sm uppercase">
                 <a id="nav-explore" class="text-[#ceee93] border-b-2 border-[#ceee93] pb-1 cursor-pointer" onclick="setActiveNav('explore'); scrollToSection('dashboard-section')">Explore</a>
                 <a id="nav-partners" class="text-[#a5aac2] hover:text-[#a3a6ff] transition-colors cursor-pointer" onclick="setActiveNav('partners'); scrollToSection('features-grid-section')">Partners</a>
@@ -322,34 +321,42 @@
                         placeholder="SEARCH DESTINATIONS" type="text"
                         onkeydown="if(event.key==='Enter'){navSearch()}" />
                 </div>
-                <div class="flex items-center gap-4 text-[#a3a6ff]">
-                    <span
-                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all" onclick="openModal('Notifications', 'No new alerts. You are synced with the local travel network.')">notifications</span>
-                    <span
-                        class="material-symbols-outlined cursor-pointer hover:bg-[#222b47]/50 p-1.5 rounded transition-all" onclick="openSettings()">settings</span>
-                </div>
-                <div id="nav-avatar" onclick="openSettings()" title="Account & Settings"
-                    class="w-8 h-8 rounded-full overflow-hidden border border-[#a3a6ff]/50 ring-2 ring-[#a3a6ff]/10 flex items-center justify-center bg-frontier-navy cursor-pointer hover:ring-frontier-lime/30 transition-all">
-                    <span class="material-symbols-outlined text-frontier-indigo text-sm">person</span>
+                <!-- Mobile nav links -->
+                <div class="md:hidden flex items-center gap-3 font-['Space_Grotesk'] tracking-tight text-[10px] uppercase">
+                    <a class="text-[#a5aac2] cursor-pointer" onclick="scrollToSection('dashboard-section')">Map</a>
+                    <a class="text-[#a5aac2] cursor-pointer" onclick="scrollToSection('features-grid-section')">Stays</a>
                 </div>
             </div>
         </div>
     </nav>
+
+    <!-- Single Spring Button: ZENTRYX logo + notifications + settings -->
+    <div id="spring-menu" class="fixed top-20 right-4 sm:top-24 sm:right-8 z-[90] flex flex-col items-end gap-3">
+        <!-- Spring-poppable items (appear when main button is tapped) -->
+        <div id="spring-items" class="flex flex-col items-end gap-3">
+            <button id="spring-notif" onclick="openModal('Notifications', 'No new alerts. You are synced with the local travel network.')"
+                class="spring-item hidden flex items-center gap-2 glass-frontier border border-frontier-indigo/30 text-frontier-indigo px-4 py-2.5 rounded-full hover:bg-frontier-indigo/10 transition-colors">
+                <span class="material-symbols-outlined text-sm">notifications</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Alerts</span>
+            </button>
+            <button id="spring-settings" onclick="openSettings()"
+                class="spring-item hidden flex items-center gap-2 glass-frontier border border-frontier-indigo/30 text-frontier-indigo px-4 py-2.5 rounded-full hover:bg-frontier-indigo/10 transition-colors">
+                <span class="material-symbols-outlined text-sm">settings</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Settings</span>
+            </button>
+        </div>
+        <!-- Main button: the ZENTRYX logo, springs open the menu -->
+        <button id="spring-main" onclick="toggleSpringMenu()" title="ZENTRYX menu"
+            class="w-16 h-16 rounded-full glass-frontier border border-frontier-indigo/40 shadow-[0_0_25px_rgba(163,166,255,0.35)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+            <span id="spring-logo" class="font-black text-[#a3a6ff] tracking-widest text-xl" style="font-family:'Space Grotesk',sans-serif;">Z</span>
+        </button>
+    </div>
     <!-- Hero Section -->
     <section class="relative min-h-screen flex items-center pt-20 overflow-hidden">
         <div id="hero-images" class="absolute inset-0 z-0">
             <img class="w-full h-full object-cover" loading="eager"
                 alt="Scenic travel destination"
                 src="/assets/hero-scenery.jpg" />
-            <!-- Gentle bottom fade into the next section (keeps image crisp) -->
-            <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(4,8,22,0.15) 0%, rgba(4,8,22,0) 40%, rgba(4,8,22,0.55) 85%, #040816 100%);"></div>
-        </div>
-        <!-- Tech HUD Elements -->
-        <div class="absolute inset-0 z-5 pointer-events-none border-[1px] border-frontier-indigo/10 m-8 rounded-sm">
-            <div class="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-frontier-lime"></div>
-            <div class="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-frontier-lime"></div>
-            <div class="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-frontier-lime"></div>
-            <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-frontier-lime"></div>
         </div>
 
         <!-- Interactive particle network -->
@@ -2034,6 +2041,64 @@
                 return data.response || null;
             } catch (e) {
                 return null;
+            }
+        }
+
+        // ============ SPRING MENU (mass-spring-damper physics) ============
+        // Real spring simulation: position & velocity integrate per frame,
+        // giving that buttery overshoot-and-settle feel on every open/close.
+        let springOpen = false;
+        let springAnimId = null;
+        const springState = { x: 0, v: 0 }; // x: 0 = closed, 1 = open
+        const SPRING_STIFFNESS = 180;
+        const SPRING_DAMPING = 14;
+        const SPRING_MASS = 1;
+
+        function springStep() {
+            const target = springOpen ? 1 : 0;
+            const force = -SPRING_STIFFNESS * (springState.x - target) - SPRING_DAMPING * springState.v;
+            springState.v += (force / SPRING_MASS) * (1 / 60);
+            springState.x += springState.v * (1 / 60);
+
+            // Apply spring value to the main button (scale + glow pulse)
+            const btn = document.getElementById('spring-main');
+            const items = document.querySelectorAll('.spring-item');
+            if (btn) {
+                const s = 1 + springState.x * 0.08; // gentle scale pop
+                btn.style.transform = `scale(${s})`;
+                btn.style.boxShadow = `0 0 ${10 + springState.x * 30}px rgba(163,166,255,${0.2 + springState.x * 0.3})`;
+            }
+            // Items pop in/out with staggered spring (translation + opacity)
+            items.forEach((el, i) => {
+                const delay = 0; // physics already staggers naturally via velocity
+                const itemX = Math.max(0, springState.x - 0.25 - i * 0.25);
+                const t = Math.max(0, Math.min(1, itemX * 4));
+                const bounce = t * (2 - t); // ease-out
+                el.style.opacity = String(t);
+                el.style.transform = `translateY(${(1 - t) * -18}px) scale(${0.7 + t * 0.3})`;
+                el.classList.remove('hidden');
+                if (t <= 0.01) el.style.visibility = 'hidden';
+                else el.style.visibility = 'visible';
+            });
+
+            // Stop when settled
+            if (Math.abs(springState.x - target) < 0.001 && Math.abs(springState.v) < 0.001) {
+                springState.x = target;
+                if (!springOpen) {
+                    items.forEach(el => el.classList.add('hidden'));
+                }
+                springAnimId = null;
+                return;
+            }
+            springAnimId = requestAnimationFrame(springStep);
+        }
+
+        function toggleSpringMenu() {
+            springOpen = !springOpen;
+            const logo = document.getElementById('spring-logo');
+            if (logo) logo.textContent = springOpen ? '✕' : 'Z';
+            if (!springAnimId) {
+                springAnimId = requestAnimationFrame(springStep);
             }
         }
 
@@ -4035,21 +4100,8 @@
 
                 const delta = Math.abs(targetScrollY - currentScrollY);
 
-                // Hero Image Parallax — single scenery image: slow zoom-out
-                // + vertical drift as the user scrolls (Ken Burns feel).
-                if (heroImageNodes.length >= 1) {
-                    const scale = Math.max(1.25 - currentScrollY * 0.0004, 1.0);
-                    heroImageNodes[0].style.transform = `scale(${scale}) translateY(${currentScrollY * 0.18}px)`;
-                }
-
-                // Hero images stay crisp and vivid; a gentle desaturate to
-                // black & white as the user scrolls away (fully gray past ~800px),
-                // but never fade the image out entirely.
-                if (heroImagesWrap) {
-                    const gray = Math.min(currentScrollY / 800, 1);
-                    heroImagesWrap.style.filter = `grayscale(${gray})`;
-                    heroImagesWrap.style.opacity = '1';
-                }
+                // Hero image: 100% static, HD, zero effects (no zoom, no gray,
+                // no fade) — exactly as uploaded.
 
                 // Parallax and fade for main hero title
                 if (heroGroup) {
