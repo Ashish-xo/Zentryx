@@ -1265,6 +1265,7 @@
         // --- AI BUDGET PLANNER ---
         function openBudgetModal() {
             const modal = document.getElementById('budget-modal');
+            document.body.style.overflow = 'hidden';
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => {
@@ -1275,6 +1276,7 @@
 
         function closeBudgetModal() {
             const modal = document.getElementById('budget-modal');
+            document.body.style.overflow = '';
             modal.classList.add('opacity-0');
             document.getElementById('budget-modal-content').classList.add('scale-95');
             setTimeout(() => {
@@ -1951,6 +1953,7 @@
 
         function openModal(title, msg, allowHtml = false) {
             document.getElementById('modal-title').innerText = title;
+            document.body.style.overflow = 'hidden';
 
             const msgEl = document.getElementById('modal-message');
             // Security: messages render as plain text by default. Only callers
@@ -1982,6 +1985,7 @@
             const modal = document.getElementById('hud-modal');
             modal.classList.add('opacity-0');
             document.getElementById('hud-modal-content').classList.add('scale-95');
+            document.body.style.overflow = '';
             setTimeout(() => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
@@ -2668,6 +2672,7 @@
 
             // Open the dedicated weather modal
             const modal = document.getElementById('weather-modal');
+            document.body.style.overflow = 'hidden';
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => {
@@ -2678,6 +2683,7 @@
 
         function closeWeatherModal() {
             const modal = document.getElementById('weather-modal');
+            document.body.style.overflow = '';
             modal.classList.add('opacity-0');
             document.getElementById('weather-modal-content').classList.add('scale-95');
             setTimeout(() => {
@@ -2730,6 +2736,7 @@
             field.value = '';
             field.placeholder = placeholder || '';
             const modal = document.getElementById('ask-modal');
+            document.body.style.overflow = 'hidden';
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => {
@@ -2742,6 +2749,7 @@
 
         function closeAskModal() {
             const modal = document.getElementById('ask-modal');
+            document.body.style.overflow = '';
             modal.classList.add('opacity-0');
             document.getElementById('ask-modal-content').classList.add('scale-95');
             setTimeout(() => {
@@ -3602,6 +3610,7 @@
                 document.getElementById('settings-email').innerText = s ? s.email : '—';
                 document.getElementById('settings-quota').innerText = `${aiQuotaRemaining()} / ${AI_HOURLY_LIMIT}`;
                 const m = document.getElementById('settings-modal');
+                document.body.style.overflow = 'hidden';
                 m.classList.remove('hidden');
                 m.classList.add('flex');
                 setTimeout(() => {
@@ -3612,6 +3621,7 @@
 
             function closeSettings() {
                 const m = document.getElementById('settings-modal');
+                document.body.style.overflow = '';
                 m.classList.add('opacity-0');
                 document.getElementById('settings-modal-content').classList.add('scale-95');
                 setTimeout(() => {
