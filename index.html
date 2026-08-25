@@ -331,8 +331,8 @@
     </nav>
     <!-- Hero Section -->
     <section class="relative min-h-screen flex items-center pt-20 overflow-hidden">
-        <div
-            class="absolute inset-0 z-0 flex gap-1 p-2 opacity-20 grayscale hover:grayscale-0 transition-all duration-1000">
+        <div id="hero-images"
+            class="absolute inset-0 z-0 flex gap-1 p-2 opacity-40">    
             <div class="flex-1 h-full overflow-hidden border-x border-frontier-indigo/10">
                 <img class="w-full h-full object-cover"
                     data-alt="Dramatic aerial shot of winding coastal roads during sunset"
@@ -3704,6 +3704,7 @@
             const lerp = (start, end, factor) => start + (end - start) * factor;
 
             const heroImageNodes = document.querySelectorAll('section:nth-of-type(1) img');
+            const heroImagesWrap = document.getElementById('hero-images');
             const heroGroup = document.querySelector('section:nth-of-type(1) .z-10');
             const spinners = document.querySelectorAll('.grid .relative.w-full.h-full > div.rounded-full');
             const navbar = document.querySelector('nav');
@@ -3766,6 +3767,14 @@
                     heroImageNodes[0].style.transform = `scale(${scale1}) translateY(${currentScrollY * 0.15}px)`;
                     heroImageNodes[1].style.transform = `scale(${scale2}) translateY(${currentScrollY * 0.05}px)`;
                     heroImageNodes[2].style.transform = `scale(${scale3}) translateY(${currentScrollY * 0.25}px)`;
+                }
+
+                // Hero images start full-color and desaturate to black & white
+                // as the user scrolls away (fully gray past ~800px).
+                if (heroImagesWrap) {
+                    const gray = Math.min(currentScrollY / 800, 1);
+                    heroImagesWrap.style.filter = `grayscale(${gray})`;
+                    heroImagesWrap.style.opacity = String(Math.max(0.4 - currentScrollY / 1500, 0.05));
                 }
 
                 // Parallax and fade for main hero title
