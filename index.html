@@ -3595,7 +3595,11 @@
             // --- SETTINGS ---
             function openSettings() {
                 const s = getSession();
-                document.getElementById('settings-name').innerText = s ? s.name : '—';
+                if (!s) {
+                    showAuthOverlay();
+                    return;
+                }
+                document.getElementById('settings-name').innerText = s.name;
                 document.getElementById('settings-email').innerText = s ? s.email : '—';
                 document.getElementById('settings-quota').innerText = `${aiQuotaRemaining()} / ${AI_HOURLY_LIMIT}`;
                 const m = document.getElementById('settings-modal');
@@ -3630,12 +3634,9 @@
             }
 
             document.addEventListener("DOMContentLoaded", () => {
-            // 0. Auth gate — require sign-in before anything else
-            if (!getSession()) {
-                showAuthOverlay();
-            } else {
-                updateAuthAvatar();
-            }
+            // 0. Auth — no forced gate: visitors can browse freely.
+            //    Sign-in stays available via the avatar (opens auth if logged out).
+            updateAuthAvatar();
 
             // 1. DYNAMICALLY ADD CLASSES ACROSS THE PAGE
 
