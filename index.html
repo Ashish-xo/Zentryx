@@ -1152,6 +1152,67 @@
                 <div id="settings-quota" class="text-white text-sm font-bold">—</div>
                 <div class="text-frontier-text text-[10px] mt-1">Questions remaining this hour (resets hourly, per browser)</div>
             </div>
+
+            <!-- ============ AI SETUP (BYOK) ============ -->
+            <div class="mb-6 p-4 border border-frontier-indigo/30 bg-frontier-navy/50">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-[9px] uppercase tracking-widest text-frontier-lime">AI Connection (Your Own Key)</div>
+                    <button onclick="toggleAiGuide()" class="text-frontier-indigo text-[9px] font-bold uppercase tracking-widest hover:underline">Setup Guide</button>
+                </div>
+
+                <!-- Provider select -->
+                <label class="text-[8px] uppercase tracking-widest text-frontier-text/70 block mb-1">Provider Format</label>
+                <select id="ai-provider" onchange="aiSettingsChanged()"
+                    class="w-full bg-frontier-deep border border-frontier-indigo/30 px-3 py-2 text-[11px] text-white focus:outline-none focus:border-frontier-lime mb-3">
+                    <option value="openai">OpenAI-compatible (b.ai, OpenCode, OpenRouter, Groq...)</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                </select>
+
+                <label class="text-[8px] uppercase tracking-widest text-frontier-text/70 block mb-1">Base URL</label>
+                <input id="ai-baseurl" type="text" placeholder="https://api.b.ai/v1"
+                    onchange="aiSettingsChanged()"
+                    class="w-full bg-frontier-deep border border-frontier-indigo/30 px-3 py-2 text-[11px] text-white placeholder-frontier-text/40 focus:outline-none focus:border-frontier-lime mb-3" />
+
+                <label class="text-[8px] uppercase tracking-widest text-frontier-text/70 block mb-1">Model (optional)</label>
+                <input id="ai-model" type="text" placeholder="auto (gpt-4o-mini by default)"
+                    onchange="aiSettingsChanged()"
+                    class="w-full bg-frontier-deep border border-frontier-indigo/30 px-3 py-2 text-[11px] text-white placeholder-frontier-text/40 focus:outline-none focus:border-frontier-lime mb-3" />
+
+                <label class="text-[8px] uppercase tracking-widest text-frontier-text/70 block mb-1">Your API Key</label>
+                <div class="flex gap-2 mb-3">
+                    <input id="ai-apikey" type="password" placeholder="sk-...  (your own free key)"
+                        onchange="aiSettingsChanged()"
+                        class="flex-1 bg-frontier-deep border border-frontier-indigo/30 px-3 py-2 text-[11px] text-white placeholder-frontier-text/40 focus:outline-none focus:border-frontier-lime" />
+                    <button onclick="toggleAiKeyVisibility()" title="Show/hide key"
+                        class="px-3 border border-frontier-indigo/30 text-frontier-indigo hover:bg-frontier-indigo/10 text-sm">
+                        <span id="ai-key-eye" class="material-symbols-outlined">visibility</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-between gap-2">
+                    <button onclick="saveAiSettings()"
+                        class="flex-1 bg-frontier-lime text-frontier-deep py-2 text-[10px] font-black uppercase tracking-widest hover:brightness-110 transition-all">Save AI Key</button>
+                    <button onclick="clearAiSettings()"
+                        class="border border-frontier-indigo/30 text-frontier-indigo px-3 py-2 text-[9px] font-bold uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all">Clear</button>
+                </div>
+                <div id="ai-settings-status" class="hidden mt-2 text-[9px] uppercase tracking-widest"></div>
+
+                <!-- First-time setup guide -->
+                <div id="ai-guide" class="hidden mt-4 p-3 border border-frontier-indigo/20 bg-frontier-deep/60">
+                    <div class="text-[9px] font-black uppercase tracking-widest text-frontier-indigo mb-2">How to get your free AI key</div>
+                    <ol class="text-[10px] text-frontier-text space-y-1.5 list-decimal list-inside">
+                        <li>Pick a free provider (all work with Zentryx):</li>
+                        <li class="ml-2"><b class="text-white">OpenCode</b> — free tier, no card. Go to <span class="text-frontier-lime">opencode.ai</span> → Account → API keys → Create.</li>
+                        <li class="ml-2"><b class="text-white">b.ai</b> — free unlimited. Create an account at <span class="text-frontier-lime">api.b.ai</span> and grab your API key.</li>
+                        <li class="ml-2"><b class="text-white">OpenRouter</b> — free daily credits. Sign up at <span class="text-frontier-lime">openrouter.ai</span> → Keys.</li>
+                        <li>Copy your key (it starts with <span class="text-frontier-lime">sk-</span>).</li>
+                        <li>Paste it in the <b class="text-white">Your API Key</b> field above.</li>
+                        <li>Choose your provider format + base URL, then click <b class="text-frontier-lime">Save AI Key</b>.</li>
+                        <li>Your key is stored <b class="text-white">only in your browser</b> and sent with your requests — the site owner never sees it.</li>
+                    </ol>
+                </div>
+            </div>
+
             <div class="space-y-3">
                 <button onclick="clearAllChat()"
                     class="w-full border border-frontier-indigo/30 text-frontier-indigo py-2 text-[10px] font-black uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all">Clear
@@ -1932,6 +1993,25 @@
             let useDirectFallback = false;
             let res;
 
+            // BYOK: attach the visitor's own AI settings (key, provider, base URL)
+            const aiCfg = getAiSettings() || {};
+
+            // No key configured → skip the network call entirely and invite
+            // the visitor to set up their own free key.
+            if (!aiCfg.apiKey) {
+                return `Add your own free AI key to unlock the full assistant: open Settings (⚙️) → AI Connection → Setup Guide. Until then, the offline knowledge base answers routes, weather, and general questions.`;
+            }
+
+            const payload = {
+                message: prompt,
+                history: window.aiChatHistory.slice(-6),
+                max_tokens: 512,
+                apiKey: aiCfg.apiKey,
+                provider: aiCfg.provider || 'openai',
+                baseUrl: aiCfg.baseUrl || 'https://api.b.ai/v1'
+            };
+            if (aiCfg.model) payload.model = aiCfg.model;
+
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 35000);
@@ -1940,11 +2020,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     signal: controller.signal,
-                    body: JSON.stringify({
-                        message: prompt,
-                        history: window.aiChatHistory.slice(-6),
-                        max_tokens: 512
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 clearTimeout(timeoutId);
@@ -1970,6 +2046,9 @@
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
                     console.error('AI API error:', res.status, errData);
+                    if (res.status === 401) {
+                        return `Your API key was rejected by the provider. Open Settings (⚙️) → AI Connection, check your key and base URL, then Save. (Tip: keys usually start with "sk-".)`;
+                    }
                     if (res.status === 429) {
                         // Daily token budget exhausted → offline knowledge base.
                         // Everything else → rate limited, tell the user to wait.
@@ -1977,6 +2056,10 @@
                             return getOfflineResponse(prompt);
                         }
                         return 'You are sending too many requests. Please wait a moment and try again.';
+                    }
+                    const msg = errData?.error || '';
+                    if (typeof msg === 'string' && msg.length > 4 && msg.length < 200) {
+                        return `AI provider error: ${msg}`;
                     }
                     return getOfflineResponse(prompt);
                 }
@@ -2017,6 +2100,9 @@
             if (aiQuotaRemaining() <= 0) return null;
             aiQuotaConsume();
 
+            const aiCfg = getAiSettings() || {};
+            if (!aiCfg.apiKey) return null;
+
             let useDirectFallback = false;
             let res;
 
@@ -2027,7 +2113,11 @@
                     body: JSON.stringify({
                         message: prompt,
                         system: 'You are a travel budget calculator. Return ONLY raw JSON with no markdown, no backticks, no explanation. The JSON must have exactly 3 keys: cheapest, moderate, expensive. Each key must be an object with: travel_cost, hotel_rating, hotel_cost, tickets, food, total.',
-                        max_tokens: 2048
+                        max_tokens: 2048,
+                        apiKey: aiCfg.apiKey,
+                        provider: aiCfg.provider || 'openai',
+                        baseUrl: aiCfg.baseUrl || 'https://api.b.ai/v1',
+                        ...(aiCfg.model ? { model: aiCfg.model } : {})
                     })
                 });
 
@@ -3729,6 +3819,63 @@
                 }
             }
 
+            // --- AI SETTINGS (BYOK — each user brings their own key) ---
+            // Stored in localStorage per-browser. The key is sent with each
+            // request and never hardcoded server-side.
+            function getAiSettings() {
+                try { return JSON.parse(localStorage.getItem('zentryx_ai') || 'null'); } catch (e) { return null; }
+            }
+            function loadAiSettingsIntoForm() {
+                const s = getAiSettings() || {};
+                const prov = document.getElementById('ai-provider');
+                const base = document.getElementById('ai-baseurl');
+                const model = document.getElementById('ai-model');
+                const key = document.getElementById('ai-apikey');
+                if (prov) prov.value = s.provider || 'openai';
+                if (base) base.value = s.baseUrl || 'https://api.b.ai/v1';
+                if (model) model.value = s.model || '';
+                if (key) key.value = s.apiKey || '';
+            }
+            function saveAiSettings() {
+                const apiKey = (document.getElementById('ai-apikey').value || '').trim();
+                const baseUrl = (document.getElementById('ai-baseurl').value || '').trim();
+                const provider = document.getElementById('ai-provider').value;
+                const model = (document.getElementById('ai-model').value || '').trim();
+                if (!apiKey) {
+                    setAiStatus('Enter an API key first.', 'text-red-400');
+                    return;
+                }
+                const settings = { apiKey, baseUrl: baseUrl || undefined, provider, model: model || undefined };
+                localStorage.setItem('zentryx_ai', JSON.stringify(settings));
+                setAiStatus('Key saved. Your key stays in this browser.', 'text-frontier-lime');
+            }
+            function clearAiSettings() {
+                localStorage.removeItem('zentryx_ai');
+                loadAiSettingsIntoForm();
+                setAiStatus('AI key cleared.', 'text-frontier-text');
+            }
+            function setAiStatus(msg, color) {
+                const el = document.getElementById('ai-settings-status');
+                if (!el) return;
+                el.className = 'mt-2 text-[9px] uppercase tracking-widest ' + (color || 'text-frontier-text');
+                el.textContent = msg;
+                el.classList.remove('hidden');
+                setTimeout(() => el.classList.add('hidden'), 4000);
+            }
+            function toggleAiGuide() {
+                const g = document.getElementById('ai-guide');
+                if (g) g.classList.toggle('hidden');
+            }
+            function toggleAiKeyVisibility() {
+                const k = document.getElementById('ai-apikey');
+                const eye = document.getElementById('ai-key-eye');
+                if (!k) return;
+                const show = k.type === 'password';
+                k.type = show ? 'text' : 'password';
+                if (eye) eye.textContent = show ? 'visibility_off' : 'visibility';
+            }
+            function aiSettingsChanged() { /* live events — no-op, save uses explicit button */ }
+
             // --- SETTINGS ---
             function openSettings() {
                 const s = getSession();
@@ -3739,6 +3886,7 @@
                 document.getElementById('settings-name').innerText = s.name;
                 document.getElementById('settings-email').innerText = s ? s.email : '—';
                 document.getElementById('settings-quota').innerText = `${aiQuotaRemaining()} / ${AI_HOURLY_LIMIT}`;
+                loadAiSettingsIntoForm();
                 const m = document.getElementById('settings-modal');
                 document.body.style.overflow = 'hidden';
                 m.classList.remove('hidden');

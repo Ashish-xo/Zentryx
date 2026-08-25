@@ -1,5 +1,12 @@
-// Vercel Serverless Function — OpenCode AI chat completions
-// API key is stored as OPENCODE_API_KEY environment variable on Vercel
+// Vercel Serverless Function — Universal BYOK AI proxy
+// Every user brings their OWN API key (OpenAI-compatible or Anthropic).
+// The site owner's key is NOT used — each request is forwarded with the
+// caller's key to their chosen provider/base URL.
+//
+// Supported providers (auto-detected by base_url + provider field):
+//   - OpenAI-compatible: any base URL + /chat/completions (OpenCode, b.ai,
+//     OpenRouter, OpenAI, Groq, Together, ...)
+//   - Anthropic: Anthropic Messages API format (/v1/messages)
 
 const DEFAULT_SYSTEM = `You are Zentryx, a general-purpose AI assistant in a travel & intelligence dashboard. Answer any question — travel, science, math, coding, history, geography, and more.
 
@@ -14,12 +21,9 @@ Rules:
 // Simple in-memory rate limiter (per serverless instance)
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX = 15; // 15 requests per minute per IP
+const RATE_LIMIT_MAX = 30; // 30 requests per minute per IP (users BYOK, so generous)
 
 // --- Token usage tracking (in-memory, per instance) ---
-// Resets on server restart / Vercel redeploy. The OpenCode API returns a
-// `usage` object (prompt/completion/cached tokens) and a `cost` string
-// ("0" on the free tier) on every successful completion.
 const usageStats = {
     requests: 0,
     promptTokens: 0,
@@ -29,22 +33,16 @@ const usageStats = {
     cost: 0,
     errors: 0,
     rateLimited: 0,
-    cachedRequests: 0,   // served from cache, zero API tokens
+    cachedRequests: 0,
     since: Date.now()
 };
 
-// --- Layer 4: response cache + single-flight dedup ---
-// Identical questions from any user share ONE upstream call: the first
-// answer is stored for 24h, and concurrent identical requests await the
-// same in-flight promise instead of duplicating the API call.
-const responseCache = new Map();     // key -> { text, at }
-const inFlight = new Map();          // key -> Promise
-const CACHE_TTL = 24 * 3600 * 1000;  // 24 hours
+// --- Layer 4: response cache + single-flight dedup (24h) ---
+const responseCache = new Map();
+const inFlight = new Map();
+const CACHE_TTL = 24 * 3600 * 1000;
 
-// --- Layer 2: hard daily token budget (safety valve) ---
-// Once the free-tier quota is spent, the server refuses politely and the
-// client falls back to the offline knowledge base instead of burning more.
-const DAILY_TOKEN_BUDGET = 500000;   // 500K tokens per day per instance
+const DAILY_TOKEN_BUDGET = 500000;
 
 function cacheKey(message) {
     return String(message).toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 200);
@@ -59,37 +57,52 @@ function recordUsage(data) {
     usageStats.cachedTokens += u.prompt_tokens_details?.cached_tokens || 0;
     const c = parseFloat(data?.cost);
     if (!isNaN(c)) usageStats.cost += c;
-    console.log(
-        `[Zentryx AI] ${data?.model || 'unknown-model'} | ` +
-        `+${u.prompt_tokens || 0} in / +${u.completion_tokens || 0} out ` +
-        `(${u.total_tokens || 0} total) | cumulative: ${usageStats.totalTokens} tokens ` +
-        `across ${usageStats.requests} requests`
-    );
 }
 
 function isRateLimited(ip) {
     const now = Date.now();
     const entry = rateLimitMap.get(ip);
-    
     if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
         rateLimitMap.set(ip, { windowStart: now, count: 1 });
         return false;
     }
-    
     entry.count++;
-    if (entry.count > RATE_LIMIT_MAX) return true;
-    return false;
+    return entry.count > RATE_LIMIT_MAX;
+}
+
+// --- Provider config helpers ---
+
+// Default base URLs per provider flavor when the client doesn't send one.
+const DEFAULT_BASE_URLS = {
+    openai: 'https://api.b.ai/v1',          // free unlimited tier (default)
+    anthropic: 'https://api.anthropic.com/v1'
+};
+
+// A tiny allowlist of known OpenAI-compatible hosts (the client can also
+// send its own https base_url; non-https is always rejected).
+function normalizeBaseUrl(baseUrl, provider) {
+    let b = String(baseUrl || '').trim().replace(/\/+$/, '');
+    if (!b) return DEFAULT_BASE_URLS[provider] || DEFAULT_BASE_URLS.openai;
+    if (!/^https:\/\//i.test(b)) return null; // https only — no http, no file:
+    return b;
+}
+
+// Pick a sensible default model when the client doesn't specify one.
+function defaultModel(provider, baseUrl) {
+    const b = String(baseUrl || '').toLowerCase();
+    if (provider === 'anthropic' || b.includes('anthropic')) return 'claude-3-5-sonnet-20241022';
+    if (b.includes('opencode')) return 'laguna-s-2.1-free';
+    if (b.includes('openrouter')) return 'openai/gpt-4o-mini';
+    if (b.includes('groq')) return 'llama-3.3-70b-versatile';
+    return 'gpt-4o-mini';
 }
 
 module.exports = async function handler(req, res) {
-    // Same-origin only: the dashboard and this function share an origin
-    // (Vercel deployment or the local dev server), so no CORS headers are
-    // emitted. This stops third-party sites from calling this endpoint and
-    // burning the AI quota.
-
+    // Same-origin only: the dashboard and this function share an origin,
+    // so no CORS headers are emitted.
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // GET /api/stats — live token usage snapshot (also served by dev-server)
+    // GET /api/stats — live token usage snapshot
     if (req.method === 'GET') {
         return res.status(200).json({
             requests: usageStats.requests,
@@ -105,7 +118,7 @@ module.exports = async function handler(req, res) {
             dailyBudget: DAILY_TOKEN_BUDGET,
             budgetRemaining: Math.max(0, DAILY_TOKEN_BUDGET - usageStats.totalTokens),
             since: new Date(usageStats.since).toISOString(),
-            note: 'In-memory totals since server start; resets on restart/redeploy.'
+            note: 'BYOK proxy — usage is per-caller; resets on restart/redeploy.'
         });
     }
 
@@ -119,128 +132,141 @@ module.exports = async function handler(req, res) {
         return res.status(429).json({ error: 'Too many requests. Please wait a moment and try again.' });
     }
 
-    const { message, history, system } = req.body || {};
+    const {
+        message,
+        history,
+        system,
+        apiKey,        // USER'S OWN KEY (the whole point of BYOK)
+        baseUrl,       // e.g. https://api.b.ai/v1  (or sent by client)
+        provider,      // 'openai' | 'anthropic'
+        model          // optional model override
+    } = req.body || {};
 
-    // Guard rails: system prompts and history come from the client — cap
-    // their size so an attacker can't smuggle megabyte payloads into the
-    // upstream call, and coerce history into a known-safe shape.
+    // Guard rails: system prompts and history come from the client — cap size.
     const safeSystem = (typeof system === 'string' && system.length <= 2000) ? system : DEFAULT_SYSTEM;
     const safeHistory = (Array.isArray(history) ? history : []).slice(-20);
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({ error: 'Message is required' });
     }
-
-    // Limit message length
     if (message.length > 2000) {
         return res.status(400).json({ error: 'Message too long. Please keep it under 2000 characters.' });
     }
 
-    // Use OPENCODE_API_KEY environment variable if defined, otherwise fallback to the shared key
-    const apiKey = process.env.OPENCODE_API_KEY;
-    if (!apiKey) {
-        console.error('OpenCode API key is not set');
-        return res.status(500).json({ error: 'AI service is not configured. Please contact the site owner.' });
+    // --- BYOK: the caller's key is REQUIRED. No site-owner key fallback. ---
+    const key = String(apiKey || '').trim();
+    if (!key) {
+        return res.status(401).json({
+            error: 'No API key provided. Add your own free key in Settings → AI (see the setup guide on the site).'
+        });
     }
 
-    // Map history format to OpenAI messages format
-    const messages = [];
-
-    // System instruction
-    const systemPrompt = safeSystem;
-    if (systemPrompt) {
-        messages.push({ role: 'system', content: systemPrompt });
+    const prov = provider === 'anthropic' ? 'anthropic' : 'openai';
+    const base = normalizeBaseUrl(baseUrl, prov);
+    if (!base) {
+        return res.status(400).json({ error: 'base_url must be a valid https URL.' });
     }
+    const chosenModel = (typeof model === 'string' && model.trim()) ? model.trim() : defaultModel(prov, base);
 
-    // Convert history
-    for (const h of safeHistory) {
-        const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
-        let content = '';
-        if (h.parts && Array.isArray(h.parts)) {
-            content = h.parts.map(p => p.text || '').join('');
-        } else if (typeof h.content === 'string') {
-            content = h.content;
-        } else if (typeof h.text === 'string') {
-            content = h.text;
-        }
-        if (content) {
-            messages.push({ role, content });
-        }
-    }
-
-    // Add current user message
-    messages.push({ role: 'user', content: message.trim() });
-
-    // --- Layer 2: daily token budget safety valve ---
+    // --- Daily token budget safety valve ---
     if (usageStats.totalTokens >= DAILY_TOKEN_BUDGET) {
         return res.status(429).json({ error: 'Daily AI token budget exhausted. Please try again tomorrow.' });
     }
 
-    // --- Layer 4: response cache (24h) + single-flight dedup ---
-    const key = cacheKey(message);
-    const cached = responseCache.get(key);
+    // --- Response cache (24h) + single-flight dedup (keyed on message only,
+    // so identical questions share one upstream call regardless of caller) ---
+    const ckey = cacheKey(message);
+    const cached = responseCache.get(ckey);
     if (cached && Date.now() - cached.at < CACHE_TTL) {
         usageStats.cachedRequests++;
-        console.log(`[Zentryx AI] CACHE HIT "${message.slice(0, 48)}..." (saved an upstream call)`);
-        return res.status(200).json({
-            response: cached.text,
-            grounded: false,
-            searchQueries: [],
-            sources: [],
-            cached: true
-        });
+        return res.status(200).json({ response: cached.text, grounded: false, searchQueries: [], sources: [], cached: true });
     }
-
-    // If an identical question is already being answered, share that call
-    if (inFlight.has(key)) {
-        const shared = await inFlight.get(key);
+    if (inFlight.has(ckey)) {
+        const shared = await inFlight.get(ckey);
         return res.status(200).json(shared);
     }
 
     const maxTokens = Math.min(Math.max(Number(req.body.max_tokens) || 512, 1), 2048);
 
-    const run = (async () => {
-        const url = 'https://opencode.ai/zen/v1/chat/completions';
+    // Build the messages array (shared by both formats)
+    const messages = [];
+    messages.push({ role: 'system', content: safeSystem });
+    for (const h of safeHistory) {
+        const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
+        let content = '';
+        if (h.parts && Array.isArray(h.parts)) content = h.parts.map(p => p.text || '').join('');
+        else if (typeof h.content === 'string') content = h.content;
+        else if (typeof h.text === 'string') content = h.text;
+        if (content) messages.push({ role, content });
+    }
+    messages.push({ role: 'user', content: message.trim() });
 
+    const run = (async () => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
+        let url, headers, body;
+        if (prov === 'anthropic') {
+            // --- Anthropic Messages API format ---
+            url = base + '/messages';
+            headers = {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            signal: controller.signal,
-            body: JSON.stringify({
-                model: 'laguna-s-2.1-free',
+                'x-api-key': key,
+                'anthropic-version': '2023-06-01'
+            };
+            body = JSON.stringify({
+                model: chosenModel,
+                max_tokens: maxTokens,
+                system: safeSystem,
+                messages: messages.filter(m => m.role !== 'system')
+            });
+        } else {
+            // --- OpenAI-compatible chat completions ---
+            url = base + '/chat/completions';
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`
+            };
+            body = JSON.stringify({
+                model: chosenModel,
                 messages: messages,
                 temperature: 0.7,
                 max_tokens: maxTokens
-            })
-        });
+            });
+        }
 
+        let response;
+        try {
+            response = await fetch(url, { method: 'POST', headers, signal: controller.signal, body });
+        } catch (e) {
+            clearTimeout(timeout);
+            usageStats.errors++;
+            if (e.name === 'AbortError') return { status: 504, error: 'AI request timed out. Please try again.' };
+            return { status: 502, error: 'AI service unreachable. Check your base URL or try again.' };
+        }
         clearTimeout(timeout);
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            console.error(`OpenCode API error (${response.status}):`, errData);
-
-            if (response.status === 429 || (errData.error && errData.error.type === 'CreditsError')) {
-                usageStats.rateLimited++;
-                return { status: 429, error: 'AI rate limit or credit limit reached. Please try again later.' };
-            }
-            if (response.status === 400 || response.status === 401 || response.status === 403) {
-                usageStats.errors++;
-                return { status: 502, error: 'AI service configuration or authorization error.' };
-            }
             usageStats.errors++;
-            return { status: 502, error: 'AI service temporarily unavailable.' };
+            if (response.status === 401 || response.status === 403) {
+                return { status: 401, error: 'Your API key was rejected by the provider. Check it in Settings → AI.' };
+            }
+            if (response.status === 429) {
+                usageStats.rateLimited++;
+                return { status: 429, error: 'Provider rate limit reached. Wait a moment and retry, or check your key.' };
+            }
+            return { status: 502, error: (errData?.error?.message || 'AI provider error.') };
         }
 
         const data = await response.json();
         recordUsage(data);
-        let text = data?.choices?.[0]?.message?.content || '';
+        let text = '';
+        if (prov === 'anthropic') {
+            text = (data.content || []).map(b => b.text || '').join('').trim();
+        } else {
+            text = data?.choices?.[0]?.message?.content || '';
+        }
 
         // Clean any markdown formatting
         text = text
@@ -254,33 +280,20 @@ module.exports = async function handler(req, res) {
             usageStats.errors++;
             return { status: 502, error: 'AI returned an empty response. Please try again.' };
         }
-
         return { status: 200, response: text };
-    })().catch(e => {
-        console.error('Server error:', e);
-        usageStats.errors++;
-        if (e.name === 'AbortError') {
-            return { status: 504, error: 'AI request timed out. Please try again.' };
-        }
-        return { status: 500, error: 'Internal server error. Please try again.' };
-    });
+    })();
 
-    inFlight.set(key, run);
+    inFlight.set(ckey, run);
     try {
         const result = await run;
         if (result.status === 200 && result.response) {
-            responseCache.set(key, { text: result.response, at: Date.now() });
+            responseCache.set(ckey, { text: result.response, at: Date.now() });
         }
         if (result.status === 200) {
-            return res.status(200).json({
-                response: result.response,
-                grounded: false,
-                searchQueries: [],
-                sources: []
-            });
+            return res.status(200).json({ response: result.response, grounded: false, searchQueries: [], sources: [] });
         }
         return res.status(result.status).json({ error: result.error });
     } finally {
-        inFlight.delete(key);
+        inFlight.delete(ckey);
     }
 };
