@@ -29,11 +29,20 @@ export async function fetchWeatherForCity(question) {
         const w = weatherCodes[d.current?.weather_code] || 'Unknown';
         return `Current weather in ${city.name}: ${d.current?.temperature_2m ?? '--'}°C, ${w}. Humidity ${d.current?.relative_humidity_2m ?? '--'}%, Wind ${d.current?.wind_speed_10m ?? '--'} km/h.`;
       } catch {
-        return `I couldn't fetch live weather for ${city.name} right now — check the Live Weather Card on the dashboard.`;
+        return `I couldn't fetch live weather for ${city.name} right now — try again in a moment.`;
       }
     }
   }
-  return `I can help you check the weather! Use the Live Weather Card on the dashboard to see current conditions for your location.`;
+  // No city in the question — fetch live weather for the user's area
+  // (GPS when allowed, otherwise the default Amritsar coordinates).
+  try {
+    const area = await getWeatherForCurrentArea();
+    const d = await fetchWeatherByCoords(area.lat, area.lon);
+    const w = weatherCodes[d.current?.weather_code] || 'Unknown';
+    return `Current weather in ${area.label}: ${d.current?.temperature_2m ?? '--'}°C, ${w}. Humidity ${d.current?.relative_humidity_2m ?? '--'}%, Wind ${d.current?.wind_speed_10m ?? '--'} km/h.`;
+  } catch {
+    return "I couldn't fetch live weather right now — try a city name like \"weather in Goa\".";
+  }
 }
 
 export async function fetchWeatherByCoords(lat, lon) {

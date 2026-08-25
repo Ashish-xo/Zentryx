@@ -157,6 +157,6 @@ server.listen(PORT, () => {
     console.log(`\n================ ZENTRYX DEV SERVER ================`);
     console.log(`Frontend URL: http://localhost:${PORT}/`);
     console.log(`Backend API : http://localhost:${PORT}/api/ai`);
-    console.log(`Connected To: OpenCode AI (laguna-s-2.1)`);
+    console.log(`Connected To: BYOK AI proxy (visitors bring their own keys)`);
     console.log(`====================================================\n`);
 });

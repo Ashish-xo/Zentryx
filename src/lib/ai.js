@@ -3,6 +3,7 @@
 
 import travelDB from '../data/travelDB';
 import destinations from '../data/destinations';
+import { fetchWeatherForCity } from './weather';
 
 const AI_HOURLY_LIMIT = 20;
 
@@ -177,17 +178,8 @@ export function getOfflineResponse(question) {
   return `I couldn't reach the AI server right now — this might be a temporary network issue. Please try again in a moment. In the meantime, I can answer questions about: travel routes, survival skills, directions, geography, science, history, and math.`;
 }
 
-// --- Weather lookup (within local router) ---
-function fetchWeatherForCity(question) {
-  const q = question.toLowerCase();
-  const cityMap = destinations;
-  for (const [key, val] of Object.entries(cityMap)) {
-    if (q.includes(key)) {
-      return `Weather data for ${val.name}: You can check the current weather for ${val.name} using the Live Weather Card on the dashboard. The system is currently showing conditions for your area. For precise forecasts, please use the weather widget.`;
-    }
-  }
-  return `I can help you check the weather! Use the Live Weather Card on the dashboard to see current conditions, forecasts, and real-time updates for your location.`;
-}
+// --- Weather lookup (within local router) — uses imported fetchWeatherForCity from ./weather
+// (The local trash function was removed — the real weather.js version handles GPS fallback)
 
 // --- Server-side API call ---
 let chatHistory = [];

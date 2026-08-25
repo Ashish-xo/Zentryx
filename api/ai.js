@@ -8,6 +8,9 @@
 //     OpenRouter, OpenAI, Groq, Together, ...)
 //   - Anthropic: Anthropic Messages API format (/v1/messages)
 
+import { lookup } from 'node:dns/promises';
+import net from 'node:net';
+
 const DEFAULT_SYSTEM = `You are Zentryx, a general-purpose AI assistant in a travel & intelligence dashboard. Answer any question — travel, science, math, coding, history, geography, and more.
 
 Rules:
@@ -79,11 +82,42 @@ const DEFAULT_BASE_URLS = {
 };
 
 // A tiny allowlist of known OpenAI-compatible hosts (the client can also
-// send its own https base_url; non-https is always rejected).
-function normalizeBaseUrl(baseUrl, provider) {
+// send its own https base_url; non-https is always rejected). The resolved
+// IP is checked against private/loopback/link-local ranges as an SSRF guard.
+function isPrivateIp(ip) {
+    const parts = ip.split('.').map(Number);
+    if (parts.length === 4) {
+        if (parts[0] === 10) return true;
+        if (parts[0] === 127) return true;
+        if (parts[0] === 169 && parts[1] === 254) return true;
+        if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+        if (parts[0] === 192 && parts[1] === 168) return true;
+        if (parts[0] === 0) return true;
+        if (parts[0] >= 224) return true; // multicast/reserved
+        return false;
+    }
+    const low = ip.toLowerCase();
+    if (low === '::1' || low.startsWith('::ffff:127.')) return true;
+    if (low.startsWith('fc') || low.startsWith('fd')) return true; // ULA
+    if (low.startsWith('fe8') || low.startsWith('fe9') || low.startsWith('fea') || low.startsWith('feb')) return true; // link-local
+    return false;
+}
+async function resolveAndCheckBaseUrl(baseUrl, provider) {
     let b = String(baseUrl || '').trim().replace(/\/+$/, '');
     if (!b) return DEFAULT_BASE_URLS[provider] || DEFAULT_BASE_URLS.openai;
-    if (!/^https:\/\//i.test(b)) return null; // https only — no http, no file:
+    let u;
+    try { u = new URL(b); } catch { return null; }
+    if (u.protocol !== 'https:') return null;
+    const host = u.hostname;
+    if (net.isIP(host)) {
+        if (isPrivateIp(host)) return null;
+        return b;
+    }
+    // DNS resolve — reject private/internal addresses
+    try {
+        const { address } = await lookup(host, { family: 0 });
+        if (isPrivateIp(address)) return null;
+    } catch { return null; }
     return b;
 }
 
@@ -162,9 +196,9 @@ export default async function handler(req, res) {
     }
 
     const prov = provider === 'anthropic' ? 'anthropic' : 'openai';
-    const base = normalizeBaseUrl(baseUrl, prov);
+    const base = await resolveAndCheckBaseUrl(baseUrl, prov);
     if (!base) {
-        return res.status(400).json({ error: 'base_url must be a valid https URL.' });
+        return res.status(400).json({ error: 'base_url must be a valid public https URL.' });
     }
     const chosenModel = (typeof model === 'string' && model.trim()) ? model.trim() : defaultModel(prov, base);
 
