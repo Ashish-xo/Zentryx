@@ -1,7 +1,11 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import handler from './api/ai.js';
+
+// ESM shim for __dirname (package.json is "type": "module")
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = 3000;
 
