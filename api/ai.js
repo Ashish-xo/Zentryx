@@ -97,7 +97,7 @@ function defaultModel(provider, baseUrl) {
     return 'gpt-4o-mini';
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     // Same-origin only: the dashboard and this function share an origin,
     // so no CORS headers are emitted.
     if (req.method === 'OPTIONS') return res.status(200).end();

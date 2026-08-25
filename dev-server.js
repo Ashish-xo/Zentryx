@@ -1,7 +1,7 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const handler = require('./api/ai.js');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import handler from './api/ai.js';
 
 const PORT = 3000;
 
