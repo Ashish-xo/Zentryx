@@ -60,10 +60,13 @@ function MapView() {
       ]);
       if (cancelled || leafletMap.current) return;
       const map = L.map(mapRef.current, {
-        center: [31.6340, 74.8723],
-        zoom: 14,
+        center: [22.5, 79.5],
+        zoom: 5,
         zoomControl: false,
-        attributionControl: true,
+        attributionControl: false,
+        maxBounds: [[-90, -180], [90, 180]],
+        maxBoundsViscosity: 1.0,
+        minZoom: 2,
         // Starts LOCKED for both pointer and touch: the page scrolls normally
         // over the map until the user taps the toggle to enable interaction.
         scrollWheelZoom: false,
@@ -74,10 +77,25 @@ function MapView() {
         keyboard: false
       });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        noWrap: true,
+        bounds: [[-90, -180], [90, 180]],
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
+      // Add custom zoom control at bottom right
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
       leafletMap.current = map;
+
+      // Try to get the user's precise location — if they allow, fly to
+      // their position. Otherwise stay at the India overview.
+      navigator.geolocation?.getCurrentPosition(
+        (pos) => {
+          map.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: true, duration: 1.5 });
+          addLog(`Location acquired: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+        },
+        () => { /* geolocation denied — keep India overview */ },
+        { timeout: 7000, enableHighAccuracy: true }
+      );
 
       // Map starts locked — enforce a "default" cursor so the grab-hand doesn't
       // suggest the map is pannable before the user unlocks it.
