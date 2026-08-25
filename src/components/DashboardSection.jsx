@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import Leaflet from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { fetchWeatherByCoords, getWeatherForCurrentArea } from '../lib/weather';
 import weatherCodes from '../data/weatherCodes';
 import community from '../data/community';
 import { escapeHtml } from '../lib/helpers';
+
+// Leaflet is lazy-loaded inside the map effect — saves ~150KB from the initial
+// bundle so the site loads faster, especially on mobile 4G.
 
 function MapView() {
   const mapRef = useRef(null);
@@ -19,6 +20,7 @@ function MapView() {
   const [temp, setTemp] = useState('--°');
   const [coord, setCoord] = useState(null);
   const [mapScrollOn, setMapScrollOn] = useState(false);
+  const [mapLoading, setMapLoading] = useState(true);
 
   // Toggle map interaction — works for BOTH pointer (mouse wheel) and touch.
   // Locked  = page scrolls normally over the map (wheel AND touch drag disabled)
@@ -47,110 +49,118 @@ function MapView() {
     }
   };
 
-  // Init map once
+  // Init map once — Leaflet loads on demand (code-split, ~150KB saved initially)
   useEffect(() => {
-    if (leafletMap.current || !mapRef.current) return;
-    const map = Leaflet.map(mapRef.current, {
-      center: [31.6340, 74.8723],
-      zoom: 14,
-      zoomControl: false,
-      attributionControl: true,
-      // Starts LOCKED for both pointer and touch: the page scrolls normally
-      // over the map until the user taps the toggle to enable interaction.
-      scrollWheelZoom: false,
-      dragging: false,
-      touchZoom: false,
-      doubleClickZoom: false,
-      boxZoom: false,
-      keyboard: false
-    });
-    Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-    leafletMap.current = map;
+    let cancelled = false;
+    (async () => {
+      if (leafletMap.current || !mapRef.current) return;
+      const [{ default: L }, { default: leafletCss }] = await Promise.all([
+        import('leaflet'),
+        import('leaflet/dist/leaflet.css')
+      ]);
+      if (cancelled || leafletMap.current) return;
+      const map = L.map(mapRef.current, {
+        center: [31.6340, 74.8723],
+        zoom: 14,
+        zoomControl: false,
+        attributionControl: true,
+        // Starts LOCKED for both pointer and touch: the page scrolls normally
+        // over the map until the user taps the toggle to enable interaction.
+        scrollWheelZoom: false,
+        dragging: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false
+      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      leafletMap.current = map;
 
-    // Map starts locked — enforce a "default" cursor so the grab-hand doesn't
-    // suggest the map is pannable before the user unlocks it.
-    map.getContainer().style.cursor = 'default';
-    map.getContainer().style.setProperty('cursor', 'default', 'important');
+      // Map starts locked — enforce a "default" cursor so the grab-hand doesn't
+      // suggest the map is pannable before the user unlocks it.
+      map.getContainer().style.cursor = 'default';
+      map.getContainer().style.setProperty('cursor', 'default', 'important');
 
-    // Community markers
-    community.users.forEach(u => {
-      const icon = Leaflet.divIcon({
-        className: '',
-        html: `<div class="relative group cursor-pointer">
+      // Community markers
+      community.users.forEach(u => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div class="relative group cursor-pointer">
           <div class="w-8 h-8 rounded-full border-2 border-frontier-indigo animate-pulse p-0.5 bg-frontier-navy overflow-hidden">
             <img src="https://i.pravatar.cc/150?u=${u.id}" loading="lazy" class="rounded-full w-full h-full object-cover">
           </div>
           <div class="absolute -bottom-1 -right-1 bg-frontier-lime w-2.5 h-2.5 rounded-full border border-frontier-deep"></div>
         </div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+        const mk = L.marker([u.lat, u.lon], { icon }).addTo(map);
+        mk.bindPopup(`<div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[200px]">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] font-black text-white uppercase">${escapeHtml(u.name)}</span>
+            <span class="reputation-badge">Trust: ${u.trust}★</span>
+          </div>
+          <p class="text-[9px] text-frontier-indigo uppercase tracking-wider italic mb-3">"${escapeHtml(u.status)}"</p>
+        </div>`);
+        markersRef.current.push(mk);
       });
-      const mk = Leaflet.marker([u.lat, u.lon], { icon }).addTo(map);
-      mk.bindPopup(`<div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[200px]">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-[10px] font-black text-white uppercase">${escapeHtml(u.name)}</span>
-          <span class="reputation-badge">Trust: ${u.trust}★</span>
-        </div>
-        <p class="text-[9px] text-frontier-indigo uppercase tracking-wider italic mb-3">"${escapeHtml(u.status)}"</p>
-      </div>`);
-      markersRef.current.push(mk);
-    });
 
-    // Hotspots
-    community.hotspots.forEach(h => {
-      const icon = Leaflet.divIcon({
-        className: '',
-        html: `<div class="w-6 h-6 rounded border border-frontier-indigo/50 flex-shrink-0 opacity-80 overflow-hidden"><img loading="lazy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ALzx01r-awRGOh7Dsk-AcsxbAfyhkqvV9r6NX4ha6YT6myF_FNHcqcqtsOTTDnEExCuYsI6vU6JzT8MqjQJrzsnUHuQY_Ysk42SvP0ZK4AkFSYXoVDMLVGa2gm1slf0mv6R3SVO4JoOlfj8tk73XmTZ4oOJjMZu9a4oTH4LQwkjh4peFxcfOtRAPPZhxfGCSEA2RUQqGvpP91S0b1M0HjSnGQRETZx2ez3GYq8RaEyYMc4ZyTGT9IKHB_8d2FrvioVC01p5PVxxx" class="w-full h-full object-cover"/></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+      // Hotspots
+      community.hotspots.forEach(h => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div class="w-6 h-6 rounded border border-frontier-indigo/50 flex-shrink-0 opacity-80 overflow-hidden"><img loading="lazy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ALzx01r-awRGOh7Dsk-AcsxbAfyhkqvV9r6NX4ha6YT6myF_FNHcqcqtsOTTDnEExCuYsI6vU6JzT8MqjQJrzsnUHuQY_Ysk42SvP0ZK4AkFSYXoVDMLVGa2gm1slf0mv6R3SVO4JoOlfj8tk73XmTZ4oOJjMZu9a4oTH4LQwkjh4peFxcfOtRAPPZhxfGCSEA2RUQqGvpP91S0b1M0HjSnGQRETZx2ez3GYq8RaEyYMc4ZyTGT9IKHB_8d2FrvioVC01p5PVxxx" class="w-full h-full object-cover"/></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        const mk = L.marker([h.lat, h.lon], { icon }).addTo(map);
+        mk.bindPopup(`<div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[220px]">
+          <h4 class="text-xs font-black text-white uppercase mb-1">${escapeHtml(h.name)}</h4>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[8px] font-bold uppercase tracking-widest text-frontier-lime">${escapeHtml(h.availability)}</span>
+            <span class="w-1 h-1 bg-white/20 rounded-full"></span>
+            <span class="text-[8px] text-frontier-text uppercase">${escapeHtml(h.type)}</span>
+          </div>
+          <div class="space-y-1">${h.posts.map(p => `<div class="text-[9px] text-frontier-text border-b border-frontier-indigo/10 pb-1">"${escapeHtml(p)}"</div>`).join('')}</div>
+        </div>`);
+        markersRef.current.push(mk);
       });
-      const mk = Leaflet.marker([h.lat, h.lon], { icon }).addTo(map);
-      mk.bindPopup(`<div class="glass-frontier p-4 border border-frontier-indigo/30 min-w-[220px]">
-        <h4 class="text-xs font-black text-white uppercase mb-1">${escapeHtml(h.name)}</h4>
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-[8px] font-bold uppercase tracking-widest text-frontier-lime">${escapeHtml(h.availability)}</span>
-          <span class="w-1 h-1 bg-white/20 rounded-full"></span>
-          <span class="text-[8px] text-frontier-text uppercase">${escapeHtml(h.type)}</span>
-        </div>
-        <div class="space-y-1">${h.posts.map(p => `<div class="text-[9px] text-frontier-text border-b border-frontier-indigo/10 pb-1">"${escapeHtml(p)}"</div>`).join('')}</div>
-      </div>`);
-      markersRef.current.push(mk);
-    });
 
-    // Alerts
-    community.alerts.forEach(a => {
-      const icon = Leaflet.divIcon({
-        className: '',
-        html: `<div class="w-5 h-5 rounded-full bg-red-500/80 border border-red-300 flex items-center justify-center text-[10px] text-white font-black">!</div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
+      // Alerts
+      community.alerts.forEach(a => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div class="w-5 h-5 rounded-full bg-red-500/80 border border-red-300 flex items-center justify-center text-[10px] text-white font-black">!</div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+        const mk = L.marker([a.lat, a.lon], { icon }).addTo(map);
+        mk.bindPopup(`<div class="glass-frontier p-4 border border-red-400/30 min-w-[200px]">
+          <div class="text-[8px] font-bold uppercase tracking-widest text-red-400 mb-1">${escapeHtml(a.type)} alert · ${escapeHtml(a.severity)}</div>
+          <p class="text-[10px] text-white">${escapeHtml(a.msg)}</p>
+        </div>`);
+        markersRef.current.push(mk);
       });
-      const mk = Leaflet.marker([a.lat, a.lon], { icon }).addTo(map);
-      mk.bindPopup(`<div class="glass-frontier p-4 border border-red-400/30 min-w-[200px]">
-        <div class="text-[8px] font-bold uppercase tracking-widest text-red-400 mb-1">${escapeHtml(a.type)} alert · ${escapeHtml(a.severity)}</div>
-        <p class="text-[10px] text-white">${escapeHtml(a.msg)}</p>
-      </div>`);
-      markersRef.current.push(mk);
-    });
 
-    // Heatmap
-    try {
-      const heat = Leaflet.heatLayer(
-        community.hotspots.map(h => [h.lat, h.lon, 1]),
-        { radius: 30, blur: 25, maxZoom: 17 }
-      );
-      heatRef.current = heat;
-      heat.addTo(map);
-    } catch { /* heat plugin may not load in some environments */ }
+      // Heatmap
+      try {
+        const heat = L.heatLayer(
+          community.hotspots.map(h => [h.lat, h.lon, 1]),
+          { radius: 30, blur: 25, maxZoom: 17 }
+        );
+        heatRef.current = heat;
+        heat.addTo(map);
+      } catch { /* heat plugin may not load in some environments */ }
 
-    // Click to show coords
-    map.on('click', (e) => setCoord({ lat: e.latlng.lat.toFixed(5), lon: e.latlng.lng.toFixed(5) }));
-    map.on('click', () => addLog('Map signal acquired.'));
-
-    return () => { map.remove(); leafletMap.current = null; };
+      // Click to show coords
+      map.on('click', (e) => setCoord({ lat: e.latlng.lat.toFixed(5), lon: e.latlng.lng.toFixed(5) }));
+      map.on('click', () => addLog('Map signal acquired.'));
+      setMapLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Weather mini-HUD
@@ -197,6 +207,12 @@ function MapView() {
   return (
     <div className="relative w-full h-[400px] sm:h-[700px] shadow-[0_0_80px_rgba(4,8,22,0.8)] border border-frontier-indigo/10 rounded-sm group">
       <div ref={mapRef} id="map" className="w-full h-full"></div>
+      {mapLoading && (
+        <div className="absolute inset-0 z-[999] flex flex-col items-center justify-center bg-frontier-deep/80 backdrop-blur-sm">
+          <span className="material-symbols-outlined text-frontier-lime text-3xl animate-pulse mb-2">map</span>
+          <span className="text-[9px] font-black uppercase tracking-widest text-frontier-indigo">Initializing map grid...</span>
+        </div>
+      )}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1001]"></div>
 
       {/* Layer buttons */}
