@@ -365,30 +365,7 @@
         <canvas id="hero-network"></canvas>
 
         <div class="relative z-10 max-w-7xl mx-auto px-6 w-full text-center">
-            <div
-                class="hero-reveal inline-block mb-4 px-3 py-1 bg-frontier-indigo/10 border border-frontier-indigo/30 text-frontier-indigo text-xs font-bold tracking-[0.4em] uppercase rounded-full">
-                Find Your Next Adventure
-            </div>
-            <h1
-                class="hero-reveal font-headline font-black text-4xl sm:text-6xl md:text-8xl text-white leading-none mb-6 tracking-tight uppercase">
-                Travel with <span class="text-frontier-lime neon-glow-lime">Ease</span>
-            </h1>
-            <p
-                class="hero-reveal font-body text-lg md:text-xl text-frontier-text max-w-2xl mx-auto mb-12 tracking-wide uppercase font-light">
-                Experience the world with a smart travel companion that adapts to your unique preferences and keeps you
-                connected.
-            </p>
-            <div class="hero-reveal flex flex-col md:flex-row gap-6 justify-center px-4 sm:px-0">
-                <button onclick="openBudgetModal()"
-                    class="bg-frontier-indigo text-frontier-deep px-6 py-3 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 neon-glow-indigo">
-                    Start Planning
-                </button>
-                <button
-                    onclick="openModal('Live Updates', 'Connecting to current travel conditions in your area. Please wait...')"
-                    class="border border-frontier-indigo text-frontier-indigo px-6 py-3 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all duration-300">
-                    Live Travel Updates
-                </button>
-            </div>
+            <!-- Hero content removed per request — clean visual splash -->
         </div>
     </section>
     <!-- The Travel Cluster -->
@@ -780,6 +757,13 @@
                     <button onclick="snapToMe()" id="snap-btn"
                         class="absolute bottom-2 right-2 sm:bottom-6 sm:right-6 z-[1000] glass-frontier p-2 sm:p-3 text-frontier-lime border border-frontier-lime/30 rounded-full hover:bg-frontier-lime/10 transition-all">
                         <span class="material-symbols-outlined">location_searching</span>
+                    </button>
+
+                    <!-- Map scroll lock toggle (top-center) -->
+                    <button onclick="toggleMapScroll()" id="map-scroll-btn" title="Toggle map scroll"
+                        class="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] glass-frontier px-3 py-2 rounded-full border transition-all flex items-center gap-2 border-frontier-indigo/30 text-frontier-indigo hover:bg-frontier-indigo/10">
+                        <span id="map-scroll-icon" class="material-symbols-outlined text-sm">lock</span>
+                        <span id="map-scroll-label" class="text-[8px] font-black uppercase tracking-widest">Scroll Locked</span>
                     </button>
                 </div>
             </div>
@@ -2912,7 +2896,11 @@
                 attributionControl: false,
                 maxBounds: WORLD_BOUNDS,
                 maxBoundsViscosity: 1.0,
-                minZoom: 2
+                minZoom: 2,
+                // Wheel scroll OFF by default — the page scrolls normally over
+                // the map. User toggles map scroll with the lock button.
+                scrollWheelZoom: false,
+                dragging: true
             });
 
             // noWrap + bounds: tiles never repeat past the world edge, so a
@@ -2924,6 +2912,28 @@
 
             // Add custom zoom control at bottom right
             L.control.zoom({ position: 'bottomright' }).addTo(mainMap);
+        }
+
+        // Map scroll lock toggle — page scrolls over the map by default;
+        // user unlocks it to zoom/pan with the wheel while interacting.
+        let mapScrollEnabled = false;
+        function toggleMapScroll() {
+            if (!mainMap) return;
+            mapScrollEnabled = !mapScrollEnabled;
+            const icon = document.getElementById('map-scroll-icon');
+            const label = document.getElementById('map-scroll-label');
+            const btn = document.getElementById('map-scroll-btn');
+            if (mapScrollEnabled) {
+                mainMap.scrollWheelZoom.enable();
+                if (icon) icon.innerText = 'lock_open';
+                if (label) label.innerText = 'Scroll On';
+                if (btn) { btn.classList.remove('border-frontier-indigo/30', 'text-frontier-indigo'); btn.classList.add('border-frontier-lime/30', 'text-frontier-lime'); }
+            } else {
+                mainMap.scrollWheelZoom.disable();
+                if (icon) icon.innerText = 'lock';
+                if (label) label.innerText = 'Scroll Locked';
+                if (btn) { btn.classList.remove('border-frontier-lime/30', 'text-frontier-lime'); btn.classList.add('border-frontier-indigo/30', 'text-frontier-indigo'); }
+            }
         }
 
         // --- ROUTE PLANNER ENGINE ---
