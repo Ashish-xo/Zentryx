@@ -6,11 +6,18 @@ export default function Hero() {
 
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden" id="hero-section">
-      {/* Single HD scenery photo as background */}
+      {/* Single HD scenery photo as background — auto-adapted to screen size */}
       <div id="hero-images" className="absolute inset-0 z-0">
-        <img className="w-full h-full object-cover" loading="eager"
-          alt="Scenic travel destination"
-          src="/assets/hero-scenery.jpg" />
+        <picture>
+          <source media="(min-width: 1600px)"
+            srcSet="/assets/hero-scenery-landscape-2x.jpg" />
+          <source media="(min-width: 768px)"
+            srcSet="/assets/hero-scenery-landscape.jpg" />
+          <source srcSet="/assets/hero-scenery-hd.jpg" />
+          <img className="w-full h-full object-cover object-center" loading="eager"
+            alt="Scenic travel destination"
+            src="/assets/hero-scenery.jpg" />
+        </picture>
       </div>
 
       {/* Hero content */}
