@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { fetchWeatherByCoords, getWeatherForCurrentArea } from '../lib/weather';
 import weatherCodes from '../data/weatherCodes';
+import BudgetPlanner from './BudgetPlanner';
+import Phrasebook from './Phrasebook';
+import WorldClock from './WorldClock';
+import EmergencyContacts from './EmergencyContacts';
 
 function WeatherCard() {
   const { state, openModal, setWeatherModal } = useApp();
@@ -301,7 +305,11 @@ export default function FeaturesGrid() {
           <WeatherCard />
           <StaysCard />
           <RoutePlanner />
+          <BudgetPlanner />
           <NavCard />
+          <Phrasebook />
+          <WorldClock />
+          <EmergencyContacts />
         </div>
       </div>
     </section>

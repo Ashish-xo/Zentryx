@@ -204,6 +204,39 @@
   filter: blur(0);
 }
 
+/* Budget Planner sliders — matches the frontier lime/indigo theme */
+.budget-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, rgba(206, 238, 147, 0.7), rgba(163, 166, 255, 0.4));
+  outline: none;
+  cursor: pointer;
+}
+.budget-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ceee93;
+  border: 2px solid #070d1f;
+  box-shadow: 0 0 10px rgba(206, 238, 147, 0.5);
+  transition: transform 0.15s ease;
+}
+.budget-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.budget-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ceee93;
+  border: 2px solid #070d1f;
+  box-shadow: 0 0 10px rgba(206, 238, 147, 0.5);
+}
+
 /* Blue "you are here" pulse ring on the map */
 @keyframes locPulse {
   0% { transform: scale(1); opacity: 0.25; }
