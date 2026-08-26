@@ -35,20 +35,8 @@ export function useScrollEffects() {
       const spinners = document.querySelectorAll('.grid .relative.w-full.h-full > div.rounded-full');
       const navbar = document.querySelector('nav');
 
-      // Hero images: parallax + desaturate on scroll
-      if (heroImgs.length >= 3) {
-        const s1 = Math.max(1.3 - y * 0.0005, 1.0);
-        const s2 = Math.max(1.2 - y * 0.0003, 1.0);
-        const s3 = Math.max(1.4 - y * 0.0006, 1.0);
-        heroImgs[0].style.transform = `scale(${s1}) translateY(${y * 0.15}px)`;
-        heroImgs[1].style.transform = `scale(${s2}) translateY(${y * 0.05}px)`;
-        heroImgs[2].style.transform = `scale(${s3}) translateY(${y * 0.25}px)`;
-      }
-      if (heroWrap) {
-        const gray = Math.min(y / 800, 1);
-        heroWrap.style.filter = `grayscale(${gray})`;
-        heroWrap.style.opacity = String(Math.max(0.4 - y / 1500, 0.05));
-      }
+      // Hero image: 100% static, HD, zero effects — no zoom, no gray, no fade.
+      // The scenery photo stays exactly as uploaded, always.
       if (heroGroup) {
         heroGroup.style.transform = `translateY(${y * -0.3}px)`;
         heroGroup.style.opacity = Math.max(1 - y / 500, 0);
