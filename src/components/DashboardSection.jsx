@@ -87,11 +87,13 @@ function MapView() {
       leafletMap.current = map;
 
       // Try to get the user's precise location — if they allow, fly to
-      // their position. Otherwise stay at the India overview.
+      // their position AND drop a blue pulsing "you are here" dot.
       navigator.geolocation?.getCurrentPosition(
         (pos) => {
-          map.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: true, duration: 1.5 });
-          addLog(`Location acquired: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+          const { latitude: lat, longitude: lon } = pos.coords;
+          map.setView([lat, lon], 14, { animate: true, duration: 1.5 });
+          window.__addUserDot(lat, lon);
+          addLog(`Location acquired: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
         },
         () => { /* geolocation denied — keep India overview */ },
         { timeout: 7000, enableHighAccuracy: true }
@@ -101,6 +103,33 @@ function MapView() {
       // suggest the map is pannable before the user unlocks it.
       map.getContainer().style.cursor = 'default';
       map.getContainer().style.setProperty('cursor', 'default', 'important');
+
+      // Blue pulsing "you are here" dot — visible precise-location marker.
+      // Exposed on window so both geolocation and snapToMe can drop it.
+      let userDotLayer = null;
+      let userPulseLayer = null;
+      window.__addUserDot = (lat, lon) => {
+        if (userDotLayer) map.removeLayer(userDotLayer);
+        if (userPulseLayer) map.removeLayer(userPulseLayer);
+        userDotLayer = L.circleMarker([lat, lon], {
+          radius: 8,
+          color: '#ffffff',
+          weight: 2.5,
+          fillColor: '#3b82f6',
+          fillOpacity: 0.95
+        }).addTo(map);
+        userPulseLayer = L.circleMarker([lat, lon], {
+          radius: 18,
+          color: 'transparent',
+          fillColor: '#3b82f6',
+          fillOpacity: 0.25
+        }).addTo(map);
+        const pulseEl = userPulseLayer.getElement();
+        if (pulseEl) {
+          pulseEl.style.animation = 'locPulse 2s ease-out infinite';
+          pulseEl.style.transformOrigin = 'center';
+        }
+      };
 
       // Community markers
       community.users.forEach(u => {
@@ -212,7 +241,11 @@ function MapView() {
   const snapToMe = () => {
     if (!leafletMap.current) return;
     navigator.geolocation?.getCurrentPosition(
-      (pos) => { leafletMap.current.setView([pos.coords.latitude, pos.coords.longitude], 15); addLog('Location locked via GPS.'); },
+      (pos) => {
+        leafletMap.current.setView([pos.coords.latitude, pos.coords.longitude], 15);
+        if (window.__addUserDot) window.__addUserDot(pos.coords.latitude, pos.coords.longitude);
+        addLog('Location locked via GPS.');
+      },
       () => addLog('GPS denied — using default position.'),
       { timeout: 6000 }
     );

@@ -203,3 +203,10 @@
   transform: translateY(0);
   filter: blur(0);
 }
+
+/* Blue "you are here" pulse ring on the map */
+@keyframes locPulse {
+  0% { transform: scale(1); opacity: 0.25; }
+  50% { transform: scale(1.6); opacity: 0.05; }
+  100% { transform: scale(1); opacity: 0.25; }
+}
