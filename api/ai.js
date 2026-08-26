@@ -51,6 +51,18 @@ function cacheKey(message) {
     return String(message).toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 200);
 }
 
+// Upstream error messages are echoed to the client only after being scrubbed:
+// no key material, no control chars, capped length.
+function sanitizeErrorMsg(msg) {
+    if (typeof msg !== 'string') return 'AI provider error.';
+    const s = msg
+        .replace(/sk-[A-Za-z0-9_-]{8,}/gi, 'sk-***')
+        .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
+        .slice(0, 200)
+        .trim();
+    return s || 'AI provider error.';
+}
+
 function recordUsage(data) {
     const u = data?.usage || {};
     usageStats.requests++;
@@ -85,7 +97,13 @@ const DEFAULT_BASE_URLS = {
 // send its own https base_url; non-https is always rejected). The resolved
 // IP is checked against private/loopback/link-local ranges as an SSRF guard.
 function isPrivateIp(ip) {
-    const parts = ip.split('.').map(Number);
+    let addr = String(ip || '').trim();
+    // Normalize IPv4-mapped IPv6 (::ffff:192.168.1.1) → plain IPv4 so the
+    // dotted-quad checks below catch it (previously it slipped through,
+    // because Number('::ffff:192') is NaN and no branch matched).
+    const v4mapped = addr.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+    if (v4mapped) addr = v4mapped[1];
+    const parts = addr.split('.').map(Number);
     if (parts.length === 4) {
         if (parts[0] === 10) return true;
         if (parts[0] === 127) return true;
@@ -96,8 +114,9 @@ function isPrivateIp(ip) {
         if (parts[0] >= 224) return true; // multicast/reserved
         return false;
     }
-    const low = ip.toLowerCase();
-    if (low === '::1' || low.startsWith('::ffff:127.')) return true;
+    const low = addr.toLowerCase();
+    if (low === '::1' || low === '::') return true;
+    if (low.startsWith('::ffff:')) return true; // any remaining v4-mapped form
     if (low.startsWith('fc') || low.startsWith('fd')) return true; // ULA
     if (low.startsWith('fe8') || low.startsWith('fe9') || low.startsWith('fea') || low.startsWith('feb')) return true; // link-local
     return false;
@@ -113,10 +132,14 @@ async function resolveAndCheckBaseUrl(baseUrl, provider) {
         if (isPrivateIp(host)) return null;
         return b;
     }
-    // DNS resolve — reject private/internal addresses
+    // DNS resolve — reject if ANY resolved address is private/internal.
+    // Checks every A/AAAA record (all: true), not just the first one, so a
+    // hostname that mixes public + private records can't sneak past.
     try {
-        const { address } = await lookup(host, { family: 0 });
-        if (isPrivateIp(address)) return null;
+        const addresses = await lookup(host, { all: true });
+        for (const { address } of addresses) {
+            if (isPrivateIp(address)) return null;
+        }
     } catch { return null; }
     return b;
 }
@@ -160,8 +183,17 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Rate limiting
-    const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+    // Rate limiting — trust the platform/socket IP only. Client-supplied
+    // X-Forwarded-For values are used only when they parse as a real IP
+    // (on Vercel the platform sets this; the local dev server overwrites it
+    // from the socket, so a caller can't rotate headers to bypass the limit).
+    const clientIP = (() => {
+        const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+        if (xff && net.isIP(xff)) return xff;
+        const real = String(req.headers['x-real-ip'] || '').trim();
+        if (real && net.isIP(real)) return real;
+        return (req.socket && req.socket.remoteAddress) || 'unknown';
+    })();
     if (isRateLimited(clientIP)) {
         return res.status(429).json({ error: 'Too many requests. Please wait a moment and try again.' });
     }
@@ -200,7 +232,8 @@ export default async function handler(req, res) {
     if (!base) {
         return res.status(400).json({ error: 'base_url must be a valid public https URL.' });
     }
-    const chosenModel = (typeof model === 'string' && model.trim()) ? model.trim() : defaultModel(prov, base);
+    const modelStr = (typeof model === 'string' && model.trim().length <= 200) ? model.trim() : '';
+    const chosenModel = modelStr || defaultModel(prov, base);
 
     // --- Daily token budget safety valve ---
     if (usageStats.totalTokens >= DAILY_TOKEN_BUDGET) {
@@ -226,11 +259,14 @@ export default async function handler(req, res) {
     const messages = [];
     messages.push({ role: 'system', content: safeSystem });
     for (const h of safeHistory) {
-        const role = h.role === 'model' ? 'assistant' : (h.role || 'user');
+        // Only user/assistant roles are forwarded — a client-supplied
+        // 'system' role could otherwise override the server's system prompt.
+        const role = (h.role === 'model' || h.role === 'assistant') ? 'assistant' : 'user';
         let content = '';
-        if (h.parts && Array.isArray(h.parts)) content = h.parts.map(p => p.text || '').join('');
+        if (h.parts && Array.isArray(h.parts)) content = h.parts.map(p => (p && typeof p.text === 'string') ? p.text : '').join('');
         else if (typeof h.content === 'string') content = h.content;
         else if (typeof h.text === 'string') content = h.text;
+        content = content.slice(0, 4000); // cap per-message size
         if (content) messages.push({ role, content });
     }
     messages.push({ role: 'user', content: message.trim() });
@@ -290,7 +326,7 @@ export default async function handler(req, res) {
                 usageStats.rateLimited++;
                 return { status: 429, error: 'Provider rate limit reached. Wait a moment and retry, or check your key.' };
             }
-            return { status: 502, error: (errData?.error?.message || 'AI provider error.') };
+            return { status: 502, error: sanitizeErrorMsg(errData?.error?.message) };
         }
 
         const data = await response.json();

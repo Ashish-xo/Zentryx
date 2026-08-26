@@ -40,6 +40,8 @@ const server = http.createServer((req, res) => {
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Content-Security-Policy', CSP);
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self), payment=(), usb=()');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     // Same-origin only: no CORS headers, so third-party sites can't call /api/*
 
     if (req.method === 'OPTIONS') {
@@ -54,13 +56,29 @@ const server = http.createServer((req, res) => {
         const isPost = req.method === 'POST';
         const finish = () => {
             try {
-                const parsedBody = isPost ? JSON.parse(body || '{}') : {};
+                let parsedBody = {};
+                if (isPost) {
+                    try {
+                        parsedBody = JSON.parse(body || '{}');
+                    } catch {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+                        return;
+                    }
+                }
 
-                // Wrap req and res to match Vercel environment
+                // Wrap req and res to match Vercel environment.
+                // X-Forwarded-For is OVERWRITTEN from the socket so a client
+                // can't spoof it and bypass the proxy's per-IP rate limiter.
                 const vercelReq = {
                     method: req.method,
-                    headers: req.headers,
-                    body: parsedBody
+                    headers: {
+                        ...req.headers,
+                        'x-forwarded-for': req.socket.remoteAddress,
+                        'x-real-ip': req.socket.remoteAddress
+                    },
+                    body: parsedBody,
+                    socket: req.socket
                 };
 
                 let statusCode = 200;
@@ -77,13 +95,14 @@ const server = http.createServer((req, res) => {
                     json(data) {
                         res.writeHead(statusCode, {
                             ...headers,
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-store'
                         });
                         res.end(JSON.stringify(data));
                         return this;
                     },
                     end() {
-                        res.writeHead(statusCode, headers);
+                        res.writeHead(statusCode, { ...headers, 'Cache-Control': 'no-store' });
                         res.end();
                     }
                 };
@@ -101,9 +120,19 @@ const server = http.createServer((req, res) => {
         };
 
         let body = '';
+        let bodyRejected = false;
         if (isPost) {
-            req.on('data', chunk => { body += chunk; });
-            req.on('end', finish);
+            req.on('data', chunk => {
+                if (bodyRejected) return;
+                body += chunk;
+                if (body.length > 256 * 1024) {
+                    bodyRejected = true;
+                    res.writeHead(413, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Request body too large' }));
+                    req.destroy();
+                }
+            });
+            req.on('end', () => { if (!bodyRejected) finish(); });
         } else {
             finish();
         }
@@ -147,8 +176,9 @@ const server = http.createServer((req, res) => {
                 res.writeHead(404, { 'Content-Type': 'text/html' });
                 res.end('<h1>404 Not Found</h1>', 'utf-8');
             } else {
+                console.error('Static file error:', error.code);
                 res.writeHead(500);
-                res.end('Server Error: ' + error.code);
+                res.end('Server Error');
             }
         } else {
             res.writeHead(200, { 'Content-Type': contentType });

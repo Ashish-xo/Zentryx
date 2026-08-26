@@ -24,8 +24,7 @@ export async function fetchWeatherForCity(question) {
     if (q.includes(key)) {
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
-        const r = await fetch(url);
-        const d = await r.json();
+        const d = await fetchOpenMeteo(url);
         const w = weatherCodes[d.current?.weather_code] || 'Unknown';
         return `Current weather in ${city.name}: ${d.current?.temperature_2m ?? '--'}°C, ${w}. Humidity ${d.current?.relative_humidity_2m ?? '--'}%, Wind ${d.current?.wind_speed_10m ?? '--'} km/h.`;
       } catch {
@@ -45,10 +44,21 @@ export async function fetchWeatherForCity(question) {
   }
 }
 
+async function fetchOpenMeteo(url, ms = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: controller.signal });
+    if (!r.ok) throw new Error('open-meteo HTTP ' + r.status);
+    return await r.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchWeatherByCoords(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
-  const r = await fetch(url);
-  return r.json();
+  return fetchOpenMeteo(url);
 }
 
 export async function getWeatherForCurrentArea() {

@@ -36,8 +36,13 @@ export function SettingsModal() {
   if (!state.settingsVisible) return null;
 
   const saveAi = () => {
-    if (!ai.apiKey.trim()) { setAiStatus({ msg: 'Enter an API key first.', color: 'text-red-400' }); return; }
-    const cleaned = { apiKey: ai.apiKey.trim(), baseUrl: ai.baseUrl.trim() || undefined, provider: ai.provider, model: ai.model.trim() || undefined };
+    const key = String(ai.apiKey || '').trim();
+    if (!key) { setAiStatus({ msg: 'Enter an API key first.', color: 'text-red-400' }); return; }
+    const base = String(ai.baseUrl || '').trim();
+    if (base && !/^https:\/\//i.test(base)) { setAiStatus({ msg: 'Base URL must start with https://', color: 'text-red-400' }); return; }
+    const model = String(ai.model || '').trim();
+    if (model.length > 200) { setAiStatus({ msg: 'Model name too long.', color: 'text-red-400' }); return; }
+    const cleaned = { apiKey: key, baseUrl: base || undefined, provider: ai.provider, model: model || undefined };
     localStorage.setItem('zentryx_ai', JSON.stringify(cleaned));
     setAiStatus({ msg: 'Key saved. Your key stays in this browser.', color: 'text-frontier-lime' });
   };
@@ -91,7 +96,7 @@ export function SettingsModal() {
             <div>
               <label className="text-[8px] uppercase tracking-widest text-frontier-text/70 block mb-1">Your API Key</label>
               <div className="flex gap-2">
-                <input id="ai-apikey" value={ai.apiKey} onChange={e => setAi({ ...ai, apiKey: e.target.value })} type={showKey ? 'text' : 'password'} placeholder="sk-...  (your own free key)"
+                <input id="ai-apikey" value={ai.apiKey} onChange={e => setAi({ ...ai, apiKey: e.target.value })} type={showKey ? 'text' : 'password'} placeholder="sk-...  (your own free key)" autoComplete="off" autoCorrect="off" spellCheck={false} name="zentryx-ai-key"
                   className="flex-1 bg-frontier-deep border border-frontier-indigo/30 px-3 py-2 text-[11px] text-white placeholder-frontier-text/40 focus:outline-none focus:border-frontier-lime" />
                 <button onClick={() => setShowKey(!showKey)} className="px-3 border border-frontier-indigo/30 text-frontier-indigo hover:bg-frontier-indigo/10 text-sm">
                   <span className="material-symbols-outlined">{showKey ? 'visibility_off' : 'visibility'}</span>
@@ -204,7 +209,25 @@ export function BudgetModal() {
       if (!raw) {
         setErr("No estimate available — add your AI key in Settings → AI Connection, or try a known route (e.g. Delhi to Goa).");
       } else {
-        setTiers(JSON.parse(raw));
+        // Only forward the 3 known tier keys with string values — a rogue
+        // provider response can't inject extra keys (e.g. __proto__).
+        const parsed = JSON.parse(raw);
+        const clean = {};
+        for (const k of ['cheapest', 'moderate', 'expensive']) {
+          const v = parsed && typeof parsed === 'object' ? parsed[k] : null;
+          if (v && typeof v === 'object' && !Array.isArray(v)) {
+            clean[k] = {
+              travel_cost: String(v.travel_cost ?? '—'),
+              hotel_rating: String(v.hotel_rating ?? '—'),
+              hotel_cost: String(v.hotel_cost ?? '—'),
+              tickets: String(v.tickets ?? '—'),
+              food: String(v.food ?? '—'),
+              total: String(v.total ?? '—')
+            };
+          }
+        }
+        if (Object.keys(clean).length) setTiers(clean);
+        else setErr('Could not parse the estimate. Try again.');
       }
     } catch {
       setErr('Could not compute the estimate. Try again.');
