@@ -262,26 +262,6 @@ function RoutePlanner() {
   );
 }
 
-function NavCard() {
-  const { scrollToSection } = useApp();
-  return (
-    <div className="md:col-span-1 bg-frontier-indigo p-8 flex flex-col justify-between text-frontier-deep group hover:brightness-110 transition-all">
-      <div className="flex justify-between items-start">
-        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
-        <span className="text-[10px] uppercase tracking-widest font-black">Navigation</span>
-      </div>
-      <div className="mt-20">
-        <h3 className="text-2xl font-headline font-black uppercase mb-2">Hidden Gems</h3>
-        <p className="text-frontier-deep/80 text-sm font-bold uppercase tracking-wide">Discover off-the-beaten-path locations recommended by our trusted community.</p>
-        <button onClick={() => scrollToSection('dashboard-section')} className="mt-6 flex items-center gap-2 group-hover:translate-x-2 transition-transform">
-          <span className="font-black text-xs uppercase tracking-widest">View Map</span>
-          <span className="material-symbols-outlined text-sm">trending_flat</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function FeaturesGrid() {
   const { openModal } = useApp();
   return (
@@ -306,7 +286,6 @@ export default function FeaturesGrid() {
           <StaysCard />
           <RoutePlanner />
           <BudgetPlanner />
-          <NavCard />
           <Phrasebook />
           <WorldClock />
           <EmergencyContacts />
