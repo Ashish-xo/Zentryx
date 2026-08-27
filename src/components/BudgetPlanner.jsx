@@ -68,8 +68,8 @@ export default function BudgetPlanner() {
       className="md:col-span-2 glass-frontier p-4 sm:p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-indigo/30 transition-all">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 neon-glow-lime flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
+        <div className="w-9 h-9 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 neon-glow-lime flex-shrink-0">
+          <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
         </div>
         <div className="flex-1">
           <h3 className="text-xl font-headline font-bold text-white uppercase">Budget Planner</h3>

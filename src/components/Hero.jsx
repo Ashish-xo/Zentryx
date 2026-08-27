@@ -5,7 +5,7 @@ export default function Hero() {
   const { openModal, scrollToSection } = useApp();
 
   return (
-    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden" id="hero-section">
+    <section className="relative min-h-screen flex items-center pt-28 overflow-hidden" id="hero-section">
       {/* Single HD scenery photo as background — auto-adapted to screen size */}
       <div id="hero-images" className="absolute inset-0 z-0">
         <picture>
@@ -33,11 +33,11 @@ export default function Hero() {
         </p>
         <div className="hero-reveal flex flex-col md:flex-row gap-6 justify-center px-4 sm:px-0">
           <button onClick={() => openModal('Budget Planner', 'Budget planning modal')}
-            className="bg-frontier-indigo text-frontier-deep px-6 py-3 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 neon-glow-indigo">
+            className="bg-frontier-indigo text-frontier-deep px-5 py-2.5 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 neon-glow-indigo">
             Start Planning
           </button>
           <button onClick={() => openModal('Live Updates', 'Connecting to current travel conditions in your area. Please wait...')}
-            className="border border-frontier-indigo text-frontier-indigo px-6 py-3 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all duration-300">
+            className="border border-frontier-indigo text-frontier-indigo px-5 py-2.5 sm:px-12 sm:py-4 font-bold uppercase tracking-widest hover:bg-frontier-indigo/10 transition-all duration-300">
             Live Travel Updates
           </button>
         </div>

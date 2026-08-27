@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Footer() {
   return (
-    <footer className="py-12 px-6 border-t border-frontier-indigo/10 bg-frontier-navy/30">
+    <footer className="py-16 px-6 border-t border-frontier-indigo/10 bg-frontier-navy/30">
       <div className="max-w-7xl mx-auto text-center">
         <div className="text-2xl font-black tracking-widest text-frontier-indigo mb-4">ZENTRYX</div>
         <p className="text-frontier-text text-[11px] uppercase tracking-widest mb-8">

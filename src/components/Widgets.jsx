@@ -112,8 +112,8 @@ export function FAB() {
         </div>
       )}
       <button id="fab-icon" onClick={() => setExpanded(!expanded)}
-        className="w-12 h-12 rounded-full bg-frontier-indigo text-frontier-deep flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all neon-glow-indigo">
-        <span className="material-symbols-outlined text-2xl">{expanded ? 'close' : 'explore'}</span>
+        className="w-10 h-10 rounded-full bg-frontier-indigo text-frontier-deep flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all neon-glow-indigo">
+        <span className="material-symbols-outlined text-lg">{expanded ? 'close' : 'explore'}</span>
       </button>
     </div>
   );

@@ -43,8 +43,8 @@ export default function WorldClock() {
       className="md:col-span-1 glass-frontier p-4 sm:p-6 flex flex-col gap-4 border border-frontier-indigo/10 hover:border-frontier-indigo/30 transition-all">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 neon-glow-lime flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>globe</span>
+        <div className="w-9 h-9 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 neon-glow-lime flex-shrink-0">
+          <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>globe</span>
         </div>
         <div>
           <h3 className="text-lg font-headline font-bold text-white uppercase">World Clock</h3>

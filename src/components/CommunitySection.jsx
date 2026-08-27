@@ -25,17 +25,17 @@ export default function CommunitySection() {
   };
 
   return (
-    <section className="py-24 px-6 border-t border-frontier-indigo/10" id="community-section">
+    <section className="py-28 px-6 border-t border-frontier-indigo/10" id="community-section">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <span className="material-symbols-outlined text-frontier-lime text-6xl mb-8" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
+        <div className="text-center mb-20">
+          <span className="material-symbols-outlined text-frontier-lime text-4xl mb-8" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
           <h2 className="font-headline text-3xl sm:text-5xl font-black text-white mb-4 uppercase tracking-tighter">Traveler Network</h2>
           <p className="font-body text-frontier-text uppercase tracking-widest text-sm max-w-2xl mx-auto">
             Connect with verified travelers, share intel, and discover the hidden gems only locals know.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Threads */}
           <div className="glass-frontier border border-frontier-indigo/10 p-6">
             <div className="flex items-center justify-between mb-6">

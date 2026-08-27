@@ -22,9 +22,9 @@ export default function Testimonials() {
   ];
 
   return (
-    <section className="py-32 px-6 border-t border-frontier-indigo/10" id="testimonial-section">
+    <section className="py-36 px-6 border-t border-frontier-indigo/10" id="testimonial-section">
       <div className="max-w-4xl mx-auto text-center">
-        <span className="material-symbols-outlined text-frontier-lime text-6xl mb-8" style={{ fontVariationSettings: "'FILL' 1" }}>format_quote</span>
+        <span className="material-symbols-outlined text-frontier-lime text-4xl mb-8" style={{ fontVariationSettings: "'FILL' 1" }}>format_quote</span>
         <h2 className="font-headline text-3xl sm:text-5xl font-black text-white mb-16 uppercase tracking-tighter">Traveler Stories</h2>
         <div className="space-y-16">
           {items.map((t, i) => (

@@ -36,7 +36,7 @@ function WeatherCard() {
     <div className="md:col-span-1 glass-frontier p-8 flex flex-col justify-between group hover:border-frontier-indigo transition-all border border-frontier-indigo/10 cursor-pointer"
       onClick={() => setWeatherModal({ open: true, data: null })}>
       <div className="flex justify-between items-start">
-        <span className="material-symbols-outlined text-4xl text-frontier-indigo">{icon}</span>
+        <span className="material-symbols-outlined text-2xl text-frontier-indigo">{icon}</span>
         <div className="text-right">
           <div className="text-4xl font-headline font-black text-white">{temp}</div>
           <div className="text-[10px] uppercase tracking-widest font-bold text-frontier-indigo">LIVE_UPDATE</div>
@@ -74,8 +74,8 @@ function StaysCard() {
     <div className="md:col-span-2 glass-frontier p-4 sm:p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-indigo/30 transition-all overflow-hidden relative group"
       id="stays-card">
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-frontier-indigo/10 flex items-center justify-center text-frontier-indigo border border-frontier-indigo/30 neon-glow-indigo flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>hotel</span>
+        <div className="w-9 h-9 bg-frontier-indigo/10 flex items-center justify-center text-frontier-indigo border border-frontier-indigo/30 neon-glow-indigo flex-shrink-0">
+          <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>hotel</span>
         </div>
         <div>
           <h3 className="text-xl font-headline font-bold text-white uppercase">Curated Stays</h3>
@@ -104,13 +104,13 @@ function StaysCard() {
       <div id="stay-results-grid" className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
         {!searched && (
           <div className="col-span-2 flex flex-col items-center justify-center py-12 text-frontier-indigo/40 space-y-3">
-            <span className="material-symbols-outlined text-4xl opacity-20">travel_explore</span>
+            <span className="material-symbols-outlined text-2xl opacity-20">travel_explore</span>
             <span className="text-[9px] uppercase tracking-[0.3em]">Querying global hospitality API...</span>
           </div>
         )}
         {searched && results.length === 0 && (
           <div className="col-span-2 flex flex-col items-center justify-center py-12 text-frontier-indigo/40 space-y-3">
-            <span className="material-symbols-outlined text-4xl opacity-20">search_off</span>
+            <span className="material-symbols-outlined text-2xl opacity-20">search_off</span>
             <span className="text-[9px] uppercase tracking-[0.3em]">No stays found for "{query}"</span>
           </div>
         )}
@@ -186,8 +186,8 @@ function RoutePlanner() {
     <div className="md:col-span-2 glass-frontier p-4 sm:p-8 flex flex-col gap-6 border border-frontier-indigo/10 hover:border-frontier-lime transition-all"
       id="route-planner-card">
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 neon-glow-lime flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>alt_route</span>
+        <div className="w-9 h-9 bg-frontier-lime/10 flex items-center justify-center text-frontier-lime border border-frontier-lime/30 neon-glow-lime flex-shrink-0">
+          <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>alt_route</span>
         </div>
         <div>
           <h3 className="text-xl font-headline font-bold text-white uppercase">Route Planner</h3>
@@ -267,7 +267,7 @@ function NavCard() {
   return (
     <div className="md:col-span-1 bg-frontier-indigo p-8 flex flex-col justify-between text-frontier-deep group hover:brightness-110 transition-all">
       <div className="flex justify-between items-start">
-        <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
+        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
         <span className="text-[10px] uppercase tracking-widest font-black">Navigation</span>
       </div>
       <div className="mt-20">
@@ -285,11 +285,11 @@ function NavCard() {
 export default function FeaturesGrid() {
   const { openModal } = useApp();
   return (
-    <section className="py-24 px-6 bg-frontier-deep relative" id="features-grid-section">
+    <section className="py-28 px-6 bg-frontier-deep relative" id="features-grid-section">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
           <div className="max-w-2xl">
-            <h2 className="font-headline text-3xl sm:text-5xl font-black text-white mb-4 uppercase tracking-tighter">Real-Time Updates</h2>
+            <h2 className="font-headline text-3xl sm:text-5xl font-black text-white mb-6 uppercase tracking-tighter">Real-Time Updates</h2>
             <p className="font-body text-frontier-text uppercase tracking-widest text-sm">Live information perfectly synchronized with your itinerary.</p>
           </div>
           <div className="flex gap-4">
@@ -301,7 +301,7 @@ export default function FeaturesGrid() {
             ))}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <WeatherCard />
           <StaysCard />
           <RoutePlanner />

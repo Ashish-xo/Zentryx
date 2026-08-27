@@ -93,9 +93,11 @@ function MapView() {
           const { latitude: lat, longitude: lon } = pos.coords;
           map.setView([lat, lon], 14, { animate: true, duration: 1.5 });
           window.__addUserDot(lat, lon);
-          addLog(`Location acquired: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+          addLog(`📍 Live location found: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
         },
-        () => { /* geolocation denied — keep India overview */ },
+        () => {
+          addLog('📍 Location access denied — enable it in your browser settings or click "Use My Location" to try again.');
+        },
         { timeout: 7000, enableHighAccuracy: true }
       );
 
@@ -260,7 +262,7 @@ function MapView() {
       <div ref={mapRef} id="map" className="w-full h-full"></div>
       {mapLoading && (
         <div className="absolute inset-0 z-[999] flex flex-col items-center justify-center bg-frontier-deep/80 backdrop-blur-sm">
-          <span className="material-symbols-outlined text-frontier-lime text-3xl animate-pulse mb-2">map</span>
+          <span className="material-symbols-outlined text-frontier-lime text-xl animate-pulse mb-2">map</span>
           <span className="text-[9px] font-black uppercase tracking-widest text-frontier-indigo">Initializing map grid...</span>
         </div>
       )}

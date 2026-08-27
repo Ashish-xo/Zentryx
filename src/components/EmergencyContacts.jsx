@@ -31,8 +31,8 @@ export default function EmergencyContacts() {
       className="md:col-span-1 glass-frontier p-4 sm:p-6 flex flex-col gap-4 border border-red-400/20 hover:border-red-400/50 transition-all">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 bg-red-500/10 flex items-center justify-center text-red-400 border border-red-400/30 flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>emergency</span>
+        <div className="w-9 h-9 bg-red-500/10 flex items-center justify-center text-red-400 border border-red-400/30 flex-shrink-0">
+          <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>emergency</span>
         </div>
         <div>
           <h3 className="text-lg font-headline font-bold text-white uppercase">Emergency Contacts</h3>
